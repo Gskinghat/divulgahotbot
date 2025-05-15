@@ -1,4 +1,3 @@
-
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
@@ -93,10 +92,10 @@ async def adminpainel(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("✅ Aprovar", callback_data=f"aprovar_{item.doc_id}"),
              InlineKeyboardButton("❌ Rejeitar", callback_data=f"rejeitar_{item.doc_id}")]
         ])
-       await update.message.reply_text(
-    f"📥 {item['nome']}\n🔗 {item['link']}",
-    reply_markup=keyboard
-)
+        await update.message.reply_text(
+            f"📥 {item['nome']}\n🔗 {item['link']}",
+            reply_markup=keyboard
+        )
 
 # Aprovar ou rejeitar
 async def aprovar_rejeitar(update: Update, context: ContextTypes.DEFAULT_TYPE):
