@@ -206,6 +206,9 @@ async def main():
 
     await app.bot.delete_webhook(drop_pending_updates=True)
 
+    # Configuração do webhook (caso o polling seja um problema)
+    await app.bot.set_webhook(url="https://your-webhook-url.com")  # Adicione o seu webhook
+
     # Agendador de tarefas
     scheduler = AsyncIOScheduler()
 
@@ -225,8 +228,8 @@ async def main():
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
     app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.CHAT_MEMBER))
 
-    print("✅ Bot rodando com polling e agendamento diário!")
-    await app.run_polling(drop_pending_updates=True)
+    print("✅ Bot rodando com webhook e agendamento diário!")
+    await app.run_webhook(drop_pending_updates=True)  # Alterado para usar o webhook
 
 if __name__ == "__main__":
     try:
