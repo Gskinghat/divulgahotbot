@@ -87,8 +87,8 @@ async def adminpainel(update: Update, context: ContextTypes.DEFAULT_TYPE):
              InlineKeyboardButton("❌ Rejeitar", callback_data=f"rejeitar_{item.doc_id}")]
         ])
         await update.message.reply_text(
-            f"📥 {item['nome']}
-🔗 {item['link']}",
+            f"""📥 {item['nome']}
+🔗 {item['link']}""",
             reply_markup=keyboard
         )
 
