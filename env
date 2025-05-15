@@ -1,3 +1,3 @@
-
-BOT_TOKEN=7664156068:AAEsh9NV-eYIP7i_Z12z8UsL6K_36cdLTBQ
-ADMIN_ID=6835008287
+BOT_TOKEN=your-bot-token-here
+ADMIN_ID=your-admin-id-here
+WEBHOOK_URL=https://my-bot-url.com/webhook  # Coloque a URL real do seu webhook
