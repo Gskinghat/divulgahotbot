@@ -14,28 +14,21 @@ logging.basicConfig(level=logging.INFO)
 
 # /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = (
-        "👋 Bem-vindo ao DivulgaHotBot!
-"
-        "📢 Aqui você encontra os melhores conteúdos adulto.
+   msg = """
+👋 Bem-vindo ao *DivulgaHotBot*!
+📢 Aqui você encontra canais e grupos para divulgação de conteúdo adulto, SEO e marketing.
 
-"
-        "🔥 Para adicionar seu CANAL ou GRUPO:
-"
-        "Use o comando /cadastrar - é grátis e automático!
+🔥 Para adicionar seu CANAL ou GRUPO:
+Use o comando /cadastrar - é grátis e automático!
 
-"
-        "⚠️ Regras básicas:
-"
-        "- Voltado a conteúdo +18
-"
-        "- Descrição clara e ativa
+⚠️ Regras básicas:
+- Voltado a conteúdo +18
+- Descrição clara e ativa
 
-"
-        "📊 Lista de Canais e Grupos disponíveis:
-"
-        "👉 Use /lista para acessar agora!"
-    )
+📊 Lista de Canais e Grupos disponíveis:
+👉 Use /lista para acessar agora!
+"""
+
     await update.message.reply_text(msg)
 
 # /cadastrar nome link
