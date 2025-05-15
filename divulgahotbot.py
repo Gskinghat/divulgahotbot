@@ -16,9 +16,6 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
 import os
 
-# Adicione o import asyncio
-import asyncio
-
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -113,6 +110,15 @@ async def enviar_lista_de_canais_para_novo_admin(chat_id: int, context: ContextT
         await context.bot.send_message(chat_id=chat_id, text="Nenhum canal cadastrado.")
         return
     
+    # Mensagem personalizada antes da lista de canais
+    mensagem = (
+        "💎: {𝗟 𝗜 𝗦 𝗧 𝗔 𝗛𝗢𝗧 🔞👑} \n"
+        "A MELHOR lista quente do Telegram\n"
+        "Cadastre-se 👉 @divulgalistahotbot 🤖💎\n\n"
+        "🔗 Lista de Canais e Grupos disponíveis:\n"
+    )
+    await context.bot.send_message(chat_id=chat_id, text=mensagem)
+
     # Criação da lista de botões
     buttons = []
     for canal in canais:
@@ -217,8 +223,8 @@ async def main():
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
     app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.CHAT_MEMBER))
 
-    print("✅ Bot rodando com webhook e agendamento diário!")
-    await app.run_webhook(drop_pending_updates=True)  # Alterado para usar o webhook
+    print("✅ Bot rodando com polling e agendamento diário!")
+    await app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     try:
