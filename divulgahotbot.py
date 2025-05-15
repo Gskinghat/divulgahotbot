@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from telegram import Update, Chat
+from telegram import Update
 from telegram.ext import (
     Application,
     ApplicationBuilder,
@@ -36,24 +36,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def novo_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     membro = update.chat_member
-    if (
-        membro.new_chat_member.status in ["administrator", "creator"]
-        and membro.old_chat_member.status not in ["administrator", "creator"]
-    ):
+    if membro.new_chat_member.status in ["administrator", "creator"] and membro.old_chat_member.status not in ["administrator", "creator"]:
         canal_nome = membro.chat.title
         db["canais"].add(membro.chat.id)
 
         try:
             await context.bot.send_message(
                 chat_id=membro.from_user.id,
-                text=f"🎉 Seu Canal ({canal_nome}) foi APROVADO na lista!\n\n"
-                     "Siga as regras para continuar visível!\n\n"
+                text=f"🎉 Caro Administrador, Seu Canal ({canal_nome}) foi APROVADO em nossa lista!! 🎉\n\n"
+                     "Não se esqueça de sempre cumprir os requisitos para permanecer na lista!\n\n"
                      "Atenciosamente, Pai Black"
             )
         except:
             await context.bot.send_message(
                 chat_id=ADMIN_ID,
-                text=f"❗ Não consegui notificar o ADM de {canal_nome} ({membro.chat.id})"
+                text=f"❗ Não consegui enviar para o ADM de {canal_nome}. Talvez o bot não tenha permissão."
             )
 
 async def simular_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -67,19 +64,24 @@ async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
 
     texto = (
         f"📈 Relatório Diário – {hoje}\n\n"
-        f"Total de visualizações: {total_views:,} 👀\n"
-        f"Canais participantes: {total_canais}\n\n"
-        "Continue ativo para manter visibilidade no topo!\n"
-        "Abraços, Tio King 🚀"
+        f"Total de visualizações nas listas hoje: {total_views:,} 👀\n"
+        f"Total de canais participantes: {total_canais}\n\n"
+        "Continue ativo para manter sua visibilidade no topo, ande com grandes, abraços Tio King! 🚀"
     )
 
     await context.bot.send_message(chat_id=ADMIN_ID, text=texto)
     db["views"] = 0
 
 async def verificar_canais_existentes(app: Application):
-    async for dialog in app.bot.get_updates():
-        try:
-            chat = dialog.message.chat if dialog.message else None
+    try:
+        updates = await app.bot.get_updates()
+        for update in updates:
+            chat = None
+            if update.message:
+                chat = update.message.chat
+            elif update.channel_post:
+                chat = update.channel_post.chat
+
             if chat and chat.type in ["channel", "supergroup"]:
                 member = await app.bot.get_chat_member(chat.id, app.bot.id)
                 if member.status in ["administrator", "creator"] and chat.id not in db["canais"]:
@@ -88,8 +90,13 @@ async def verificar_canais_existentes(app: Application):
                         chat_id=ADMIN_ID,
                         text=f"✅ Bot é admin em: {chat.title} ({chat.id})"
                     )
-        except Exception as e:
-            print(f"Erro ao verificar canal: {e}")
+    except Exception as e:
+        print(f"Erro ao verificar canais existentes: {e}")
+
+async def comando_verificar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🔍 Verificando canais...")
+    await verificar_canais_existentes(context.application)
+    await update.message.reply_text("✅ Verificação concluída!")
 
 # === MAIN ===
 
@@ -103,16 +110,13 @@ async def main():
     scheduler.start()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("verificar", comando_verificar))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
     app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.CHAT_MEMBER))
-
-    # Verifica canais onde o bot já está como admin
-    await verificar_canais_existentes(app)
 
     print("✅ Bot rodando com polling e agendamento diário!")
     await app.run_polling()
 
-# Detectar se o loop já está ativo
 if __name__ == "__main__":
     try:
         asyncio.get_running_loop().create_task(main())
