@@ -1,12 +1,17 @@
 
 import logging
 import asyncio
+import os
+from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from tinydb import TinyDB, Query
 
-TOKEN = "7664156068:AAEsh9NV-eYIP7i_Z12z8UsL6K_36cdLTBQ"
-ADMIN_ID = 6835008287
+load_dotenv()  # Carrega variáveis do .env (funciona localmente)
+
+TOKEN = os.getenv("7664156068:AAEsh9NV-eYIP7i_Z12z8UsL6K_36cdLTBQ")
+ADMIN_ID = int(os.getenv("6835008287"))
+
 db = TinyDB('canais.json')
 canais = db.table('canais')
 
