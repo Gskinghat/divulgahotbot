@@ -2,14 +2,16 @@ import logging
 import asyncio
 import os
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatMemberUpdated
+from telegram.ext import (ApplicationBuilder, CommandHandler, CallbackQueryHandler,
+                          ContextTypes, ChatMemberHandler)
 from tinydb import TinyDB, Query
 
 load_dotenv()
 
 TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
+BACKUP_CHANNEL_ID = os.getenv("BACKUP_CHANNEL_ID")  # Opcional
 
 db = TinyDB('canais.json')
 canais = db.table('canais')
@@ -17,19 +19,24 @@ canais = db.table('canais')
 logging.basicConfig(level=logging.INFO)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = """👋 Bem-vindo ao *DivulgaHotBot*!
-📢 Aqui você encontra canais e grupos para divulgação de conteúdo adulto, SEO e marketing.
+    user_first = update.effective_user.first_name
+    msg = f"""👋 E "{user_first}"! Bem vindo ao nosso bot de parcerias automáticas
 
-🔥 Para adicionar seu CANAL ou GRUPO:
-Use o comando /cadastrar - é grátis e automático!
+⭐️ COMO FUNCIONA:
+Sempre que postarmos links no seu grupo também postaremos o seu link em outros grupos
 
-⚠️ Regras básicas:
-- Voltado a conteúdo +18
-- Descrição clara e ativa
+🤝 PARCERIA JUSTA!
+Mantenha cada lista por pelo menos ⏰ 24 horas no seu grupo, caso contrário seu link perderá visibilidade
 
-📊 Lista de Canais e Grupos disponíveis:
-👉 Use /lista para acessar agora!"""
-    await update.message.reply_text(msg, parse_mode="Markdown")
+🟢 REQUISITOS:
+- O histórico de conversas precisa estar ativo
+- O grupo precisa ou ter mídias ou ser ativo
+- O GRUPO É TOTALMENTE GRÁTIS!
+- Não pode conter nada ilegal
+- Manter cada lista por pelo menos 24 horas
+
+Clique em \"🟢 Adicionar Bot\" para participar"""
+    await update.message.reply_text(msg)
 
 async def cadastrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = context.args
@@ -41,8 +48,8 @@ async def cadastrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not link.startswith("@") and "t.me" not in link:
         await update.message.reply_text("❌ Link inválido. Use @canal ou https://t.me/...")
         return
-    canais.insert({'nome': nome, 'link': link, 'aprovado': False})
-    await update.message.reply_text("✅ Canal enviado para análise e aprovação!")
+    canais.insert({'nome': nome, 'link': link, 'aprovado': True})
+    await update.message.reply_text("✅ Canal cadastrado com sucesso e já está na lista!")
 
 async def lista(update: Update, context: ContextTypes.DEFAULT_TYPE):
     page = int(context.args[0]) if context.args else 0
@@ -72,48 +79,50 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update.message = query.message
         await lista(update, context)
 
-async def adminpainel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_ID:
-        await update.message.reply_text("❌ Acesso negado.")
-        return
-    pendentes = canais.search(Query().aprovado == False)
-    if not pendentes:
-        await update.message.reply_text("✅ Nenhum canal pendente.")
-        return
-    for item in pendentes:
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("✅ Aprovar", callback_data=f"aprovar_{item.doc_id}"),
-             InlineKeyboardButton("❌ Rejeitar", callback_data=f"rejeitar_{item.doc_id}")]
-        ])
-        await update.message.reply_text(
-            f"""📥 {item['nome']}
-🔗 {item['link']}""",
-            reply_markup=keyboard
-        )
+async def novo_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    new_status = update.my_chat_member.new_chat_member.status
+    bot_id = context.bot.id
 
-async def aprovar_rejeitar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    action, doc_id = query.data.split("_")
-    doc_id = int(doc_id)
-    if action == "aprovar":
-        canais.update({'aprovado': True}, doc_ids=[doc_id])
-        await query.edit_message_text("✅ Canal aprovado!")
-    elif action == "rejeitar":
-        canais.remove(doc_ids=[doc_id])
-        await query.edit_message_text("❌ Canal rejeitado e removido.")
+    if new_status == "administrator" and update.my_chat_member.new_chat_member.user.id == bot_id:
+        chat = update.effective_chat
+        user = update.effective_user
+
+        nome = chat.title or "Grupo sem nome"
+        link = f"https://t.me/{chat.username}" if chat.username else "Sem @link"
+
+        if not canais.search((Query().link == link) | (Query().nome == nome)):
+            canais.insert({'nome': nome, 'link': link, 'aprovado': True})
+
+        mensagem = f"""🎉 *Caro Administrador*, seu canal *{nome}* foi **APROVADO** em nossa lista! 🎉\n\nNão se esqueça de sempre cumprir os requisitos para permanecer na lista!\n\nAtenciosamente,\n*Pai Black* 🕶️"""
+        try:
+            await context.bot.send_message(
+                chat_id=user.id,
+                text=mensagem,
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            logging.warning(f"[ERRO] Não consegui enviar msg privada para {user.id} — {user.username or 'sem username'} — Erro: {e}")
+            if BACKUP_CHANNEL_ID:
+                try:
+                    await context.bot.send_message(
+                        chat_id=BACKUP_CHANNEL_ID,
+                        text=f"⚠️ Falha ao notificar ADM `{user.id}` sobre grupo *{nome}*\nErro: `{e}`",
+                        parse_mode="Markdown"
+                    )
+                except:
+                    logging.warning("❌ Também falhou ao enviar para canal de backup.")
 
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("cadastrar", cadastrar))
     app.add_handler(CommandHandler("lista", lista))
-    app.add_handler(CommandHandler("adminpainel", adminpainel))
     app.add_handler(CallbackQueryHandler(button, pattern="^page_"))
-    app.add_handler(CallbackQueryHandler(aprovar_rejeitar, pattern="^(aprovar|rejeitar)_"))
+    app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.MY_CHAT_MEMBER))
+
     await app.run_polling()
 
-# --- Execução segura para ambientes como Railway ---
 if __name__ == "__main__":
     import nest_asyncio
     nest_asyncio.apply()
