@@ -206,8 +206,16 @@ async def main():
 
     await app.bot.delete_webhook(drop_pending_updates=True)
 
-    # Configuração do webhook (caso o polling seja um problema)
-    await app.bot.set_webhook(url="https://your-webhook-url.com")  # Adicione o seu webhook
+    # URL do Webhook (Substitua com a URL real do seu serviço)
+    webhook_url = os.getenv("WEBHOOK_URL")  # Idealmente, isso seria configurado em um arquivo .env
+
+    # Verificando se a URL do Webhook está correta
+    if webhook_url == "https://your-webhook-url.com":
+        logger.error("Por favor, configure a URL do Webhook corretamente.")
+        return
+
+    # Configuração do webhook
+    await app.bot.set_webhook(url=webhook_url)  # Substitua pelo URL do seu serviço de webhook
 
     # Agendador de tarefas
     scheduler = AsyncIOScheduler()
