@@ -1,6 +1,5 @@
-python-telegram-bot[webhooks]==20.7
-tinydb
-httpx
+Flask
+python-telegram-bot==20.7
 python-dotenv
 nest_asyncio
 apscheduler==3.10.4
