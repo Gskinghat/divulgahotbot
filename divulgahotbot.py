@@ -64,7 +64,7 @@ def get_canais():
 
 # === FUNÇÕES ===
 
-# Função para enviar o relatório diário
+# Função de enviar o relatório diário
 async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
     hoje = datetime.now().strftime("%d/%m/%Y")
     total_views = get_views()
@@ -219,6 +219,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        asyncio.get_running_loop().create_task(main())
+        asyncio.run(main())
     except RuntimeError:
+        nest_asyncio.apply()
         asyncio.run(main())
