@@ -2,23 +2,25 @@ import logging
 import asyncio
 import os
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatMemberUpdated
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    ChatMemberHandler,
+    ContextTypes,
+)
 from tinydb import TinyDB, Query
 
-# Carrega variáveis de ambiente
 load_dotenv()
+
 TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
-# Banco de dados
 db = TinyDB('canais.json')
 canais = db.table('canais')
 
-# Logs
 logging.basicConfig(level=logging.INFO)
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("telegram").setLevel(logging.INFO)
 
 # Comando /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -70,7 +72,7 @@ async def lista(update: Update, context: ContextTypes.DEFAULT_TYPE):
     markup = InlineKeyboardMarkup([buttons]) if buttons else None
     await update.message.reply_text(text, reply_markup=markup)
 
-# Paginação
+# Callback dos botões de paginação
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -80,7 +82,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update.message = query.message
         await lista(update, context)
 
-# Painel admin
+# Comando /adminpainel
 async def adminpainel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
         await update.message.reply_text("❌ Acesso negado.")
@@ -100,7 +102,7 @@ async def adminpainel(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=keyboard
         )
 
-# Aprovar / Rejeitar
+# Aprovar ou rejeitar canal
 async def aprovar_rejeitar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -113,23 +115,31 @@ async def aprovar_rejeitar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         canais.remove(doc_ids=[doc_id])
         await query.edit_message_text("❌ Canal rejeitado e removido.")
 
-# Main com polling
+# Auto cadastro quando bot é adicionado como admin
+async def auto_cadastrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    new_status = update.my_chat_member.new_chat_member.status
+    if new_status == "administrator":
+        chat = update.effective_chat
+        if chat.type in ["channel", "supergroup", "group"]:
+            nome = chat.title
+            link = f"@{chat.username}" if chat.username else f"ID:{chat.id}"
+            # Evita duplicados
+            if not canais.search((Query().link == link) | (Query().link == str(chat.id))):
+                canais.insert({'nome': nome, 'link': link, 'aprovado': True})
+                logging.info(f"✅ Canal/grupo '{nome}' cadastrado automaticamente.")
+
+# Função principal
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("cadastrar", cadastrar))
     app.add_handler(CommandHandler("lista", lista))
     app.add_handler(CommandHandler("adminpainel", adminpainel))
     app.add_handler(CallbackQueryHandler(button, pattern="^page_"))
     app.add_handler(CallbackQueryHandler(aprovar_rejeitar, pattern="^(aprovar|rejeitar)_"))
+    app.add_handler(ChatMemberHandler(auto_cadastrar, chat_member_types=["my_chat_member"]))
 
-    print("🤖 Bot iniciado e aguardando mensagens...")
     await app.run_polling()
 
 if __name__ == "__main__":
-    import nest_asyncio
-    import asyncio
-
-    nest_asyncio.apply()
     asyncio.run(main())
