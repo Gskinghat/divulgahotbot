@@ -1,31 +1,30 @@
-import asyncio
+import os
 from datetime import datetime
 from telegram import Update
 from telegram.ext import (
-    Application,
     ApplicationBuilder,
-    ContextTypes,
     CommandHandler,
     ChatMemberHandler,
     MessageHandler,
+    ContextTypes,
     filters,
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from dotenv import load_dotenv
 import nest_asyncio
 
-# Aplicar patch para suportar loop reentrante
 nest_asyncio.apply()
+load_dotenv()
 
-# === CONFIG ===
-BOT_TOKEN = "7664156068:AAEsh9NV-eYIP7i_Z12z8UsL6K_36cdLTBQ"
-ADMIN_ID = 6835008287
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID", "6835008287"))
 
 db = {
     "views": 0,
     "canais": set(),
 }
 
-# === FUNÇÕES ===
+# === Handlers ===
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -39,7 +38,6 @@ async def novo_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if membro.new_chat_member.status in ["administrator", "creator"] and membro.old_chat_member.status not in ["administrator", "creator"]:
         canal_nome = membro.chat.title
         db["canais"].add(membro.chat.id)
-
         try:
             await context.bot.send_message(
                 chat_id=membro.from_user.id,
@@ -61,38 +59,29 @@ async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
     hoje = datetime.now().strftime("%d/%m/%Y")
     total_views = db["views"]
     total_canais = len(db["canais"])
-
     texto = (
         f"📈 Relatório Diário – {hoje}\n\n"
         f"Total de visualizações nas listas hoje: {total_views:,} 👀\n"
         f"Total de canais participantes: {total_canais}\n\n"
         "Continue ativo para manter sua visibilidade no topo, ande com grandes, abraços Tio King! 🚀"
     )
-
     await context.bot.send_message(chat_id=ADMIN_ID, text=texto)
     db["views"] = 0
 
-# === MAIN ===
+# === Inicialização direta ===
 
-async def main():
+if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    await app.bot.delete_webhook(drop_pending_updates=True)
-
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(enviar_relatorio_diario, "cron", hour=0, minute=0, args=[app.bot])
-    scheduler.start()
-
+    # Handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
     app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.CHAT_MEMBER))
 
-    print("✅ Bot rodando com polling e agendamento diário!")
-    await app.run_polling()
+    # Agendamento diário
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(enviar_relatorio_diario, "cron", hour=0, minute=0, args=[app.bot])
+    scheduler.start()
 
-# Detectar se o loop já está ativo
-if __name__ == "__main__":
-    try:
-        asyncio.get_running_loop().create_task(main())
-    except RuntimeError:
-        asyncio.run(main())
+    print("✅ Bot rodando com polling e agendamento diário!")
+    app.run_polling()  # bloqueia o processo, não deixa Railway finalizar
