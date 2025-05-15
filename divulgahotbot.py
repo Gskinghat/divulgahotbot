@@ -64,6 +64,12 @@ def get_canais():
 
 # === FUNÇÕES ===
 
+# Função para enviar mensagem periodicamente
+async def enviar_mensagem_periodica(bot, horario):
+    mensagem = f"⏰ Hora de se atualizar! A mensagem programada para {horario} foi enviada!"
+    # Enviar para o admin ou um grupo específico, aqui estou enviando para o ADMIN_ID
+    await bot.send_message(chat_id=ADMIN_ID, text=mensagem)
+
 # Função para enviar o relatório diário
 async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
     hoje = datetime.now().strftime("%d/%m/%Y")
