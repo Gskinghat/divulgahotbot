@@ -1,5 +1,3 @@
-import asyncio
-from datetime import datetime
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -12,18 +10,14 @@ from telegram.ext import (
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
+import os
 
 # Aplicar patch para suportar loop reentrante
 nest_asyncio.apply()
 
 # === CONFIG ===
-BOT_TOKEN = "7664156068:AAEsh9NV-eYIP7i_Z12z8UsL6K_36cdLTBQ"
-ADMIN_ID = 6835008287
-
-db = {
-    "views": 0,
-    "canais": set(),
-}
+BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")  # Substitua pelo token ou use variável de ambiente
+ADMIN_ID = int(os.getenv("ADMIN_ID", 6835008287))  # Substitua ou use variável de ambiente
 
 # === FUNÇÕES ===
 
@@ -53,55 +47,16 @@ async def novo_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text=f"❗ Não consegui enviar para o ADM de {canal_nome}. Talvez o bot não tenha permissão."
             )
 
-async def simular_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    db["views"] += 1
-    await update.message.reply_text("Visualização simulada!")
-
-async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
-    hoje = datetime.now().strftime("%d/%m/%Y")
-    total_views = db["views"]
-    total_canais = len(db["canais"])
-
-    texto = (
-        f"📈 Relatório Diário – {hoje}\n\n"
-        f"Total de visualizações nas listas hoje: {total_views:,} 👀\n"
-        f"Total de canais participantes: {total_canais}\n\n"
-        "Continue ativo para manter sua visibilidade no topo, ande com grandes, abraços Tio King! 🚀"
-    )
-
-    await context.bot.send_message(chat_id=ADMIN_ID, text=texto)
-    db["views"] = 0
-
-async def verificar_canais_existentes(app: Application):
-    try:
-        updates = await app.bot.get_updates()
-        for update in updates:
-            chat = None
-            if update.message:
-                chat = update.message.chat
-            elif update.channel_post:
-                chat = update.channel_post.chat
-
-            if chat and chat.type in ["channel", "supergroup"]:
-                member = await app.bot.get_chat_member(chat.id, app.bot.id)
-                if member.status in ["administrator", "creator"] and chat.id not in db["canais"]:
-                    db["canais"].add(chat.id)
-                    await app.bot.send_message(
-                        chat_id=ADMIN_ID,
-                        text=f"✅ Bot é admin em: {chat.title} ({chat.id})"
-                    )
-    except Exception as e:
-        print(f"Erro ao verificar canais existentes: {e}")
-
-async def comando_verificar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🔍 Verificando canais...")
-    await verificar_canais_existentes(context.application)
-    await update.message.reply_text("✅ Verificação concluída!")
-
-# === MAIN ===
-
+# Ajuste do Pool de Conexões e Timeout
 async def main():
+    # Configuração do bot com pool e timeout ajustados
     app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Ajustando o pool de conexões e o timeout
+    app.bot._request_kwargs = {
+        'timeout': 30,  # Timeout de 30 segundos
+        'pool_size': 20  # Pool de conexões de 20
+    }
 
     await app.bot.delete_webhook(drop_pending_updates=True)
 
