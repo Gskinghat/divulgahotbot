@@ -1,10 +1,10 @@
+import asyncio
 import logging
 import sqlite3
-import os
 from datetime import datetime
-from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
+    Application,
     ApplicationBuilder,
     ContextTypes,
     CommandHandler,
@@ -14,7 +14,10 @@ from telegram.ext import (
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
-from dotenv import load_dotenv
+import os
+
+# Adicione o import asyncio
+import asyncio
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +27,7 @@ logger = logging.getLogger(__name__)
 nest_asyncio.apply()
 
 # === CONFIG ===
+from dotenv import load_dotenv
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -214,7 +218,7 @@ async def main():
     app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.CHAT_MEMBER))
 
     print("✅ Bot rodando com webhook e agendamento diário!")
-    await app.run_polling(drop_pending_updates=True)
+    await app.run_webhook(drop_pending_updates=True)  # Alterado para usar o webhook
 
 if __name__ == "__main__":
     try:
