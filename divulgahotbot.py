@@ -207,7 +207,7 @@ async def main():
     await app.bot.delete_webhook(drop_pending_updates=True)
 
     # URL do Webhook (Substitua com a URL real do seu serviço)
-    webhook_url = os.getenv("WEBHOOK_URL")  # Idealmente, isso seria configurado em um arquivo .env
+    webhook_url = os.getenv("https://divulgahotbot-production.up.railway.app/webhook")  # Idealmente, isso seria configurado em um arquivo .env
 
     # Verificando se a URL do Webhook está correta
     if webhook_url == "https://your-webhook-url.com":
