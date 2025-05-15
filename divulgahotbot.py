@@ -1,10 +1,10 @@
-import asyncio
 import logging
 import sqlite3
+import os
 from datetime import datetime
+from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    Application,
     ApplicationBuilder,
     ContextTypes,
     CommandHandler,
@@ -14,7 +14,7 @@ from telegram.ext import (
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
-import os
+from dotenv import load_dotenv
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 nest_asyncio.apply()
 
 # === CONFIG ===
-from dotenv import load_dotenv
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -64,7 +63,7 @@ def get_canais():
 
 # === FUNÇÕES ===
 
-# Função de enviar o relatório diário
+# Função para enviar o relatório diário
 async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
     hoje = datetime.now().strftime("%d/%m/%Y")
     total_views = get_views()
@@ -122,17 +121,6 @@ async def enviar_lista_de_canais_para_novo_admin(chat_id: int, context: ContextT
     
     # Envia a mensagem para o novo grupo com a lista de canais
     await context.bot.send_message(chat_id=chat_id, text="🔗 Lista de Canais Cadastrados:", reply_markup=keyboard)
-
-# Função para enviar mensagens nos horários específicos
-async def enviar_mensagem_periodica(context: ContextTypes.DEFAULT_TYPE, hora: str):
-    # Mensagem que será enviada
-    mensagem = f"⏰ Hora da atualização: {hora}! Lembre-se de que estamos sempre aqui para ajudar. 💬"
-    
-    try:
-        # Enviar a mensagem para o admin
-        await context.bot.send_message(chat_id=ADMIN_ID, text=mensagem)
-    except Exception as e:
-        logger.error(f"Erro ao enviar mensagem para {hora}: {e}")
 
 # Função de status
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -206,17 +194,6 @@ async def main():
 
     await app.bot.delete_webhook(drop_pending_updates=True)
 
-    # URL do Webhook (Substitua com a URL real do seu serviço)
-    webhook_url = os.getenv("https://divulgahotbot-production.up.railway.app/webhook")  # Idealmente, isso seria configurado em um arquivo .env
-
-    # Verificando se a URL do Webhook está correta
-    if webhook_url == "https://your-webhook-url.com":
-        logger.error("Por favor, configure a URL do Webhook corretamente.")
-        return
-
-    # Configuração do webhook
-    await app.bot.set_webhook(url=webhook_url)  # Substitua pelo URL do seu serviço de webhook
-
     # Agendador de tarefas
     scheduler = AsyncIOScheduler()
 
@@ -237,11 +214,10 @@ async def main():
     app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.CHAT_MEMBER))
 
     print("✅ Bot rodando com webhook e agendamento diário!")
-    await app.run_webhook(drop_pending_updates=True)  # Alterado para usar o webhook
+    await app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())  # De volta ao uso de asyncio.run() pois é o método correto para execução do loop
+        asyncio.get_running_loop().create_task(main())
     except RuntimeError:
-        nest_asyncio.apply()
         asyncio.run(main())
