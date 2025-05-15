@@ -1,3 +1,5 @@
+import asyncio  # Adicione esta linha para importar o módulo asyncio
+from datetime import datetime
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -16,7 +18,7 @@ import os
 nest_asyncio.apply()
 
 # === CONFIG ===
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7664156068:AAEsh9NV-eYIP7i_Z12z8UsL6K_36cdLTBQ")  # Substitua pelo token ou use variável de ambiente
+BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")  # Substitua pelo token ou use variável de ambiente
 ADMIN_ID = int(os.getenv("ADMIN_ID", 6835008287))  # Substitua ou use variável de ambiente
 
 # === FUNÇÕES ===
