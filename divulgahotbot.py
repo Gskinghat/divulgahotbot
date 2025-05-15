@@ -123,6 +123,17 @@ async def enviar_lista_de_canais_para_novo_admin(chat_id: int, context: ContextT
     # Envia a mensagem para o novo grupo com a lista de canais
     await context.bot.send_message(chat_id=chat_id, text="🔗 Lista de Canais Cadastrados:", reply_markup=keyboard)
 
+# Função para enviar mensagens nos horários específicos
+async def enviar_mensagem_periodica(context: ContextTypes.DEFAULT_TYPE, hora: str):
+    # Mensagem que será enviada
+    mensagem = f"⏰ Hora da atualização: {hora}! Lembre-se de que estamos sempre aqui para ajudar. 💬"
+    
+    try:
+        # Enviar a mensagem para o admin
+        await context.bot.send_message(chat_id=ADMIN_ID, text=mensagem)
+    except Exception as e:
+        logger.error(f"Erro ao enviar mensagem para {hora}: {e}")
+
 # Função de status
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await exibir_canais(update, context)
