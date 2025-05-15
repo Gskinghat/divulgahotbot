@@ -14,7 +14,6 @@ from telegram.ext import (
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
-import shutil
 import os
 
 # Configuração do logger
@@ -102,6 +101,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Para adicionar seu canal, basta tornar o bot administrador. Aproveite os benefícios!"
     )
 
+# Função de simulação de visualização
+async def simular_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    total_views = get_views() + 1
+    update_views(total_views)  # Atualiza o banco de dados com o novo número de views
+    await update.message.reply_text(f"👀 Mais uma visualização registrada! Total do dia: {total_views} 🎯")
+
 # Sistema de rankings
 async def enviar_relatorio_semanal(context: ContextTypes.DEFAULT_TYPE):
     # Exemplo de ranking semanal
@@ -111,6 +116,14 @@ async def enviar_relatorio_semanal(context: ContextTypes.DEFAULT_TYPE):
         texto += f"{rank}. Canal {canal_id}: {views} visualizações\n"
     
     await context.bot.send_message(chat_id=ADMIN_ID, text=texto)
+
+# Função de backup
+def backup_db():
+    from shutil import copy
+    from datetime import datetime
+    backup_file = f"backup_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.db"
+    copy('bot_data.db', backup_file)
+    print(f"Backup realizado com sucesso: {backup_file}")
 
 # Main
 async def main():
@@ -129,6 +142,7 @@ async def main():
     scheduler = AsyncIOScheduler()
     scheduler.add_job(enviar_relatorio_diario, "cron", hour=0, minute=0, args=[app.bot])
     scheduler.add_job(enviar_relatorio_semanal, "interval", weeks=1, args=[app.bot])
+    scheduler.add_job(backup_db, "interval", days=1)  # Backup diário
     scheduler.start()
 
     app.add_handler(CommandHandler("start", start))
