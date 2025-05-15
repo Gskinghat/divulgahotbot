@@ -1,4 +1,3 @@
-
 import logging
 import asyncio
 import os
@@ -7,16 +6,21 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from tinydb import TinyDB, Query
 
+# Carrega variáveis de ambiente
 load_dotenv()
-
 TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
+# Banco de dados
 db = TinyDB('canais.json')
 canais = db.table('canais')
 
+# Logs
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("telegram").setLevel(logging.INFO)
 
+# Comando /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = """👋 Bem-vindo ao *DivulgaHotBot*!
 📢 Aqui você encontra canais e grupos para divulgação de conteúdo adulto, SEO e marketing.
@@ -32,6 +36,7 @@ Use o comando /cadastrar - é grátis e automático!
 👉 Use /lista para acessar agora!"""
     await update.message.reply_text(msg, parse_mode="Markdown")
 
+# Comando /cadastrar
 async def cadastrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = context.args
     if len(args) < 2:
@@ -45,6 +50,7 @@ async def cadastrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     canais.insert({'nome': nome, 'link': link, 'aprovado': False})
     await update.message.reply_text("✅ Canal enviado para análise e aprovação!")
 
+# Comando /lista
 async def lista(update: Update, context: ContextTypes.DEFAULT_TYPE):
     page = int(context.args[0]) if context.args else 0
     items = canais.search(Query().aprovado == True)
@@ -64,6 +70,7 @@ async def lista(update: Update, context: ContextTypes.DEFAULT_TYPE):
     markup = InlineKeyboardMarkup([buttons]) if buttons else None
     await update.message.reply_text(text, reply_markup=markup)
 
+# Paginação
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -73,6 +80,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update.message = query.message
         await lista(update, context)
 
+# Painel admin
 async def adminpainel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
         await update.message.reply_text("❌ Acesso negado.")
@@ -92,6 +100,7 @@ async def adminpainel(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=keyboard
         )
 
+# Aprovar / Rejeitar
 async def aprovar_rejeitar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -104,18 +113,19 @@ async def aprovar_rejeitar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         canais.remove(doc_ids=[doc_id])
         await query.edit_message_text("❌ Canal rejeitado e removido.")
 
+# Main com polling
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("cadastrar", cadastrar))
     app.add_handler(CommandHandler("lista", lista))
     app.add_handler(CommandHandler("adminpainel", adminpainel))
     app.add_handler(CallbackQueryHandler(button, pattern="^page_"))
     app.add_handler(CallbackQueryHandler(aprovar_rejeitar, pattern="^(aprovar|rejeitar)_"))
-    await app.initialize()
-    await app.start()
+
     print("🤖 Bot iniciado e aguardando mensagens...")
-    await asyncio.Event().wait()
+    await app.run_polling()
 
 if __name__ == "__main__":
     asyncio.run(main())
