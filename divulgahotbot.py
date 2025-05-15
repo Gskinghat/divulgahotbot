@@ -17,7 +17,7 @@ import nest_asyncio
 nest_asyncio.apply()
 
 # === CONFIG ===
-BOT_TOKEN = "SEU_TOKEN_AQUI"
+BOT_TOKEN = "7664156068:AAEsh9NV-eYIP7i_Z12z8UsL6K_36cdLTBQ"
 ADMIN_ID = 6835008287
 
 db = {
