@@ -7,10 +7,10 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from tinydb import TinyDB, Query
 
-load_dotenv()  # Carrega variáveis do .env (funciona localmente)
+load_dotenv()
 
-TOKEN = os.getenv("7664156068:AAEsh9NV-eYIP7i_Z12z8UsL6K_36cdLTBQ")
-ADMIN_ID = int(os.getenv("6835008287"))
+TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 db = TinyDB('canais.json')
 canais = db.table('canais')
@@ -18,29 +18,19 @@ canais = db.table('canais')
 logging.basicConfig(level=logging.INFO)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = (
-        "👋 Bem-vindo ao *DivulgaHotBot*!
-"
-        "📢 Aqui você encontra canais e grupos para divulgação de conteúdo adulto, SEO e marketing.
+    msg = """👋 Bem-vindo ao *DivulgaHotBot*!
+📢 Aqui você encontra canais e grupos para divulgação de conteúdo adulto, SEO e marketing.
 
-"
-        "🔥 Para adicionar seu CANAL ou GRUPO:
-"
-        "Use o comando /cadastrar - é grátis e automático!
+🔥 Para adicionar seu CANAL ou GRUPO:
+Use o comando /cadastrar - é grátis e automático!
 
-"
-        "⚠️ Regras básicas:
-"
-        "- Voltado a conteúdo +18
-"
-        "- Descrição clara e ativa
+⚠️ Regras básicas:
+- Voltado a conteúdo +18
+- Descrição clara e ativa
 
-"
-        "📊 Lista de Canais e Grupos disponíveis:
-"
-        "👉 Use /lista para acessar agora!"
-    )
-    await update.message.reply_text(msg)
+📊 Lista de Canais e Grupos disponíveis:
+👉 Use /lista para acessar agora!"""
+    await update.message.reply_text(msg, parse_mode="Markdown")
 
 async def cadastrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = context.args
