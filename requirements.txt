@@ -4,3 +4,4 @@ httpx
 python-dotenv
 nest_asyncio
 apscheduler
+apscheduler==3.10.4
