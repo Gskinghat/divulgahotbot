@@ -28,7 +28,6 @@ Use o comando /cadastrar - é grátis e automático!
 📊 Lista de Canais e Grupos disponíveis:
 👉 Use /lista para acessar agora!
 """
-
     await update.message.reply_text(msg)
 
 # /cadastrar nome link
