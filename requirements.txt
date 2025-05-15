@@ -3,3 +3,4 @@ tinydb
 httpx
 python-dotenv
 nest_asyncio
+apscheduler
