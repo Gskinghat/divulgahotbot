@@ -241,7 +241,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        await main()  # Alterado para usar await sem o asyncio.run()
+        asyncio.run(main())  # De volta ao uso de asyncio.run() pois é o método correto para execução do loop
     except RuntimeError:
         nest_asyncio.apply()
-        await main()
+        asyncio.run(main())
