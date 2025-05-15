@@ -9,7 +9,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 # === CONFIG ===
 BOT_TOKEN = "SEU_TOKEN_AQUI"  # Substitua pelo seu token
-ADMIN_ID = 6835008287  # Seu ID Telegram
+ADMIN_ID = 6835008287
 
 # Simulando base de dados temporária
 db = {
@@ -60,23 +60,25 @@ async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
     )
 
     await context.bot.send_message(chat_id=ADMIN_ID, text=texto)
-    db["views"] = 0  # Resetar views
+    db["views"] = 0
 
-# === EXECUÇÃO ===
+# === MAIN ===
 
-def main():
+async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    # Handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
     app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.CHAT_MEMBER))
 
+    # Agenda diária
     scheduler = AsyncIOScheduler()
     scheduler.add_job(enviar_relatorio_diario, "cron", hour=0, minute=0, args=[app.bot])
     scheduler.start()
 
-    print("Bot rodando com polling e agendamento diário!")
-    app.run_polling(stop_signals=None)
+    print("✅ Bot rodando com polling e agendamento diário!")
+    await app.run_polling()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
