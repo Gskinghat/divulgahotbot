@@ -107,6 +107,27 @@ async def simular_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     update_views(total_views)  # Atualiza o banco de dados com o novo número de views
     await update.message.reply_text(f"👀 Mais uma visualização registrada! Total do dia: {total_views} 🎯")
 
+# Função para lidar com a adição de um novo administrador
+async def novo_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    membro = update.chat_member
+    if membro.new_chat_member.status in ["administrator", "creator"] and membro.old_chat_member.status not in ["administrator", "creator"]:
+        canal_nome = membro.chat.title
+        add_canal(membro.chat.id)
+
+        try:
+            await context.bot.send_message(
+                chat_id=membro.from_user.id,
+                text=f"🎉 Caro Administrador {membro.from_user.first_name}, Seu Canal ({canal_nome}) foi APROVADO em nossa lista!! 🎉\n\n"
+                     "Não se esqueça de sempre cumprir os requisitos para permanecer na lista!\n\n"
+                     "Atenciosamente, Pai Black"
+            )
+        except Exception as e:
+            logger.error(f"Erro ao enviar mensagem para o ADM de {canal_nome}: {e}")
+            await context.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=f"❗ Não consegui enviar para o ADM de {canal_nome}. Talvez o bot não tenha permissão."
+            )
+
 # Sistema de rankings
 async def enviar_relatorio_semanal(context: ContextTypes.DEFAULT_TYPE):
     # Exemplo de ranking semanal
