@@ -2,7 +2,7 @@ import asyncio
 import logging
 import sqlite3
 from datetime import datetime
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     ApplicationBuilder,
@@ -64,7 +64,7 @@ def get_canais():
 
 # === FUNÇÕES ===
 
-# Função de enviar o relatório diário
+# Função para enviar o relatório diário
 async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
     hoje = datetime.now().strftime("%d/%m/%Y")
     total_views = get_views()
@@ -83,15 +83,49 @@ async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"Erro ao enviar relatório diário: {e}")
 
+# Função para exibir os canais com botões clicáveis
+async def exibir_canais(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    canais = get_canais()  # Pega os canais cadastrados no banco de dados
+    if not canais:
+        await update.message.reply_text("Nenhum canal cadastrado ainda.")
+        return
+    
+    # Criação da lista de botões
+    buttons = []
+    for canal in canais:
+        canal_id = canal[0]  # Canal ID armazenado no banco
+        canal_nome = f"Canal {canal_id}"  # Defina um nome ou recupere do banco
+        buttons.append([InlineKeyboardButton(canal_nome, url=f"https://t.me/{canal_id}")])  # Adiciona o botão para cada canal
+    
+    # Adiciona a tecla de resposta
+    keyboard = InlineKeyboardMarkup(buttons)
+    
+    # Envia a mensagem com a lista de canais e botões clicáveis
+    await update.message.reply_text("🔗 Lista de Canais Cadastrados:", reply_markup=keyboard)
+
+# Função para enviar a lista de canais para o grupo onde o bot foi adicionado
+async def enviar_lista_de_canais_para_novo_admin(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    canais = get_canais()  # Pega os canais cadastrados
+    if not canais:
+        await context.bot.send_message(chat_id=chat_id, text="Nenhum canal cadastrado.")
+        return
+    
+    # Criação da lista de botões
+    buttons = []
+    for canal in canais:
+        canal_id = canal[0]  # Canal ID armazenado no banco
+        canal_nome = f"Canal {canal_id}"  # Defina um nome ou recupere do banco
+        buttons.append([InlineKeyboardButton(canal_nome, url=f"https://t.me/{canal_id}")])  # Adiciona o botão para cada canal
+    
+    # Adiciona a tecla de resposta
+    keyboard = InlineKeyboardMarkup(buttons)
+    
+    # Envia a mensagem para o novo grupo com a lista de canais
+    await context.bot.send_message(chat_id=chat_id, text="🔗 Lista de Canais Cadastrados:", reply_markup=keyboard)
+
 # Função de status
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    total_canais = len(get_canais())
-    total_views = get_views()
-    await update.message.reply_text(
-        f"📊 Status do Bot:\n\n"
-        f"👥 Total de canais cadastrados: {total_canais}\n"
-        f"👀 Visualizações registradas hoje: {total_views}"
-    )
+    await exibir_canais(update, context)
 
 # Função de boas-vindas personalizada
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -121,6 +155,8 @@ async def novo_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
                      "Não se esqueça de sempre cumprir os requisitos para permanecer na lista!\n\n"
                      "Atenciosamente, Pai Black"
             )
+            # Enviar a lista de canais para o novo canal/grupo
+            await enviar_lista_de_canais_para_novo_admin(membro.chat.id, context)
         except Exception as e:
             logger.error(f"Erro ao enviar mensagem para o ADM de {canal_nome}: {e}")
             await context.bot.send_message(
@@ -161,6 +197,13 @@ async def main():
 
     # Agendador de tarefas
     scheduler = AsyncIOScheduler()
+
+    # Agendando as mensagens para os horários específicos
+    scheduler.add_job(enviar_mensagem_periodica, "cron", hour=10, minute=0, args=[app.bot, "10:00"])
+    scheduler.add_job(enviar_mensagem_periodica, "cron", hour=17, minute=0, args=[app.bot, "17:00"])
+    scheduler.add_job(enviar_mensagem_periodica, "cron", hour=22, minute=0, args=[app.bot, "22:00"])
+    scheduler.add_job(enviar_mensagem_periodica, "cron", hour=3, minute=0, args=[app.bot, "03:00"])
+
     scheduler.add_job(enviar_relatorio_diario, "cron", hour=0, minute=0, args=[app.bot])
     scheduler.add_job(enviar_relatorio_semanal, "interval", weeks=1, args=[app.bot])
     scheduler.add_job(backup_db, "interval", days=1)  # Backup diário
@@ -172,7 +215,7 @@ async def main():
     app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.CHAT_MEMBER))
 
     print("✅ Bot rodando com polling e agendamento diário!")
-    await app.run_polling()
+    await app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     try:
