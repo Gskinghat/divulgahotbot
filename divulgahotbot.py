@@ -2,14 +2,8 @@ import logging
 import asyncio
 import os
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatMemberUpdated
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    CallbackQueryHandler,
-    ChatMemberHandler,
-    ContextTypes,
-)
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from tinydb import TinyDB, Query
 
 load_dotenv()
@@ -22,7 +16,6 @@ canais = db.table('canais')
 
 logging.basicConfig(level=logging.INFO)
 
-# Comando /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = """👋 Bem-vindo ao *DivulgaHotBot*!
 📢 Aqui você encontra canais e grupos para divulgação de conteúdo adulto, SEO e marketing.
@@ -38,7 +31,6 @@ Use o comando /cadastrar - é grátis e automático!
 👉 Use /lista para acessar agora!"""
     await update.message.reply_text(msg, parse_mode="Markdown")
 
-# Comando /cadastrar
 async def cadastrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = context.args
     if len(args) < 2:
@@ -52,7 +44,6 @@ async def cadastrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     canais.insert({'nome': nome, 'link': link, 'aprovado': False})
     await update.message.reply_text("✅ Canal enviado para análise e aprovação!")
 
-# Comando /lista
 async def lista(update: Update, context: ContextTypes.DEFAULT_TYPE):
     page = int(context.args[0]) if context.args else 0
     items = canais.search(Query().aprovado == True)
@@ -72,7 +63,6 @@ async def lista(update: Update, context: ContextTypes.DEFAULT_TYPE):
     markup = InlineKeyboardMarkup([buttons]) if buttons else None
     await update.message.reply_text(text, reply_markup=markup)
 
-# Callback dos botões de paginação
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -82,7 +72,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update.message = query.message
         await lista(update, context)
 
-# Comando /adminpainel
 async def adminpainel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
         await update.message.reply_text("❌ Acesso negado.")
@@ -102,7 +91,6 @@ async def adminpainel(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=keyboard
         )
 
-# Aprovar ou rejeitar canal
 async def aprovar_rejeitar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -115,20 +103,6 @@ async def aprovar_rejeitar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         canais.remove(doc_ids=[doc_id])
         await query.edit_message_text("❌ Canal rejeitado e removido.")
 
-# Auto cadastro quando bot é adicionado como admin
-async def auto_cadastrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    new_status = update.my_chat_member.new_chat_member.status
-    if new_status == "administrator":
-        chat = update.effective_chat
-        if chat.type in ["channel", "supergroup", "group"]:
-            nome = chat.title
-            link = f"@{chat.username}" if chat.username else f"ID:{chat.id}"
-            # Evita duplicados
-            if not canais.search((Query().link == link) | (Query().link == str(chat.id))):
-                canais.insert({'nome': nome, 'link': link, 'aprovado': True})
-                logging.info(f"✅ Canal/grupo '{nome}' cadastrado automaticamente.")
-
-# Função principal
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -137,9 +111,10 @@ async def main():
     app.add_handler(CommandHandler("adminpainel", adminpainel))
     app.add_handler(CallbackQueryHandler(button, pattern="^page_"))
     app.add_handler(CallbackQueryHandler(aprovar_rejeitar, pattern="^(aprovar|rejeitar)_"))
-    app.add_handler(ChatMemberHandler(auto_cadastrar, chat_member_types=["my_chat_member"]))
-
     await app.run_polling()
 
+# --- Execução segura para ambientes como Railway ---
 if __name__ == "__main__":
-    asyncio.run(main())
+    import nest_asyncio
+    nest_asyncio.apply()
+    asyncio.get_event_loop().run_until_complete(main())
