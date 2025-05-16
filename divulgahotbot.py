@@ -14,6 +14,7 @@ from telegram.ext import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
 import os
+from shutil import copy
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
@@ -134,6 +135,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Bem-vindo, {user_name}! 🎉\n\n"
         "Para adicionar seu canal, basta tornar o bot administrador. Aproveite os benefícios!"
     )
+
+# Função de simulação de visualização
+async def simular_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    total_views = get_views() + 1
+    update_views(total_views)  # Atualiza o banco de dados com o novo número de views
+    await update.message.reply_text(f"👀 Mais uma visualização registrada! Total do dia: {total_views} 🎯")
+
+# Função para fazer backup do banco de dados
+def backup_db():
+    # Backup do banco de dados SQLite
+    backup_file = f"backup_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.db"
+    copy('bot_data.db', backup_file)
+    print(f"Backup realizado com sucesso: {backup_file}")
 
 # Main
 async def main():
