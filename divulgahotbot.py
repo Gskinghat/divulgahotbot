@@ -11,7 +11,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # Corrigido aqui
 import nest_asyncio
 import os
 from shutil import copy
@@ -187,7 +187,10 @@ async def enviar_mensagem_programada(bot):
     canal_id = -1002506650062  # Substitua pelo chat_id do seu canal
     await bot.send_message(chat_id=canal_id, text=mensagem, parse_mode="Markdown")
 
-# Adicionando a função ao agendador para ser enviada uma vez programada
+# Inicializando o agendador
+scheduler = AsyncIOScheduler()
+
+# Adicionando as tarefas no agendador
 scheduler.add_job(enviar_mensagem_programada, "cron", hour=10, minute=0, args=[app.bot])  # Alterar horário conforme necessidade
 
 # Main
@@ -202,19 +205,6 @@ async def main():
     }
 
     # Agendador de tarefas
-    scheduler = AsyncIOScheduler()
-
-    # Agendando as mensagens para os horários específicos
-    scheduler.add_job(enviar_mensagem_periodica, "cron", hour=10, minute=0, args=[app.bot, "10:00"])
-    scheduler.add_job(enviar_mensagem_periodica, "cron", hour=17, minute=0, args=[app.bot, "17:00"])
-    scheduler.add_job(enviar_mensagem_periodica, "cron", hour=22, minute=0, args=[app.bot, "22:00"])
-    scheduler.add_job(enviar_mensagem_periodica, "cron", hour=3, minute=0, args=[app.bot, "03:00"])
-
-    scheduler.add_job(enviar_relatorio_diario, "cron", hour=0, minute=0, args=[app.bot])
-    scheduler.add_job(enviar_relatorio_semanal, "interval", weeks=1, args=[app.bot])
-    scheduler.add_job(backup_db, "interval", days=1)  # Backup diário
-    scheduler.add_job(verificar_admins_auto, "cron", hour=3, minute=0, args=[app.bot])  # Verificação automática
-    scheduler.add_job(enviar_mensagem_programada, "interval", minutes=5, args=[app.bot])  # Envio de mensagem programada
     scheduler.start()
 
     # Chama a função para adicionar os canais ao banco de dados
