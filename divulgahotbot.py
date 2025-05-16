@@ -158,6 +158,20 @@ def backup_db():
     copy('bot_data.db', backup_file)
     print(f"Backup realizado com sucesso: {backup_file}")
 
+# Lista com os chat IDs dos canais onde o bot é administrador
+chat_ids = [
+    -1002521780775, -1002496248801, -1002652344851, -1002510129415, -1002524424215, 
+    -1002699745337, -1002620495214, -1002620603496, -1002670501142, -1002293619562, 
+    -1002659153687, -1002506650062, -1002689763350, -1002531772113, -1002674038291, 
+    -1002670668044, -1002673660530, -1002658512135, -1002521019939, -1002370525614
+]
+
+# Função para adicionar os chat IDs ao banco de dados
+def add_canais():
+    for chat_id in chat_ids:
+        add_canal(chat_id)
+        logger.info(f"Canal {chat_id} adicionado com sucesso ao banco de dados.")
+
 # Main
 async def main():
     # Configuração do bot com pool e timeout ajustados
@@ -183,6 +197,9 @@ async def main():
     scheduler.add_job(backup_db, "interval", days=1)  # Backup diário
     scheduler.add_job(verificar_admins_auto, "cron", hour=3, minute=0, args=[app.bot])  # Verificação automática
     scheduler.start()
+
+    # Chama a função para adicionar os canais ao banco de dados
+    add_canais()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("verificar_admins", verificar_admins))
