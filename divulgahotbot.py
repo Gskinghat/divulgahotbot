@@ -188,6 +188,8 @@ async def enviar_mensagem_programada(bot):
     canal_id = -1002506650062  # Substitua pelo chat_id do seu canal
     await bot.send_message(chat_id=canal_id, text=mensagem, parse_mode="Markdown")
 
+    print("Mensagem enviada com sucesso!")  # Log para confirmar que a mensagem foi enviada
+
 # Inicializando o agendador corretamente
 scheduler = AsyncIOScheduler()  # Agora o scheduler é inicializado corretamente
 
@@ -214,7 +216,7 @@ async def main():
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
 
     # Agendando as mensagens a cada 1 minuto
-    scheduler.add_job(enviar_mensagem_programada, "cron", minute="1", args=[app.bot])  # Envia a cada 1 minuto
+    scheduler.add_job(enviar_mensagem_programada, "cron", minute="*", args=[app.bot])  # Envia a cada 1 minuto
     scheduler.start()  # Iniciando o scheduler
 
     print("✅ Bot rodando com polling e agendamento diário!")
