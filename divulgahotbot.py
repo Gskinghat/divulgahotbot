@@ -30,6 +30,10 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
+if not BOT_TOKEN or not ADMIN_ID:
+    logger.error("BOT_TOKEN e/ou ADMIN_ID não definidos nas variáveis de ambiente!")
+    exit(1)
+
 # Banco de dados SQLite para persistência
 conn = sqlite3.connect('bot_data.db')
 cursor = conn.cursor()
@@ -125,6 +129,10 @@ async def enviar_mensagem_programada(bot):
 
     print("Mensagem enviada com sucesso!")  # Log para confirmar que a mensagem foi enviada
 
+# Função para iniciar o bot
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Olá! Eu sou o bot e estou pronto para ajudar!")
+
 # Inicializando o agendador corretamente
 scheduler = AsyncIOScheduler()  # Agora o scheduler é inicializado corretamente
 
@@ -148,11 +156,13 @@ async def main():
     # Adiciona outros handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("verificar_admins", verificar_admins))
-    app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
 
     # Agendando as mensagens a cada 1 minuto
-    scheduler.add_job(enviar_mensagem_programada, "cron", minute="*", args=[app.bot])  # Envia a cada 1 minuto
-    scheduler.start()  # Iniciando o scheduler
+    try:
+        scheduler.add_job(enviar_mensagem_programada, "cron", minute="*", args=[app.bot])  # Envia a cada 1 minuto
+        scheduler.start()  # Iniciando o scheduler
+    except Exception as e:
+        logger.error(f"Erro ao agendar tarefa: {e}")
 
     print("✅ Bot rodando com polling e agendamento diário!")
     await app.run_polling(drop_pending_updates=True)
