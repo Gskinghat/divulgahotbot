@@ -89,6 +89,25 @@ async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"Erro ao enviar relatório diário: {e}")
 
+# Função para enviar o relatório semanal
+async def enviar_relatorio_semanal(context: ContextTypes.DEFAULT_TYPE):
+    hoje = datetime.now().strftime("%d/%m/%Y")
+    total_views = get_views()
+    total_canais = len(get_canais())
+
+    texto = (
+        f"📈 Relatório Semanal – {hoje}\n\n"
+        f"Total de visualizações nas listas esta semana: {total_views:,} 👀\n"
+        f"Total de canais participantes: {total_canais}\n\n"
+        "Continue ativo para manter sua visibilidade no topo, ande com grandes, abraços Tio King! 🚀"
+    )
+
+    try:
+        await context.bot.send_message(chat_id=ADMIN_ID, text=texto)
+        update_views(0)  # Resetando o contador de visualizações
+    except Exception as e:
+        logger.error(f"Erro ao enviar relatório semanal: {e}")
+
 # Função para exibir os canais com botões clicáveis
 async def exibir_canais(update: Update, context: ContextTypes.DEFAULT_TYPE):
     canais = get_canais()  # Pega os canais cadastrados no banco de dados
