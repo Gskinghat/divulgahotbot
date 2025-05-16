@@ -69,7 +69,7 @@ async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bot = context.bot
     canais_verificados = []
 
-    async for canal in get_canais():  # Lista dos canais cadastrados
+    for canal in get_canais():  # Lista dos canais cadastrados
         try:
             membro = await bot.get_chat_member(canal[0], bot.id)
             if membro.status in ["administrator", "creator"]:
