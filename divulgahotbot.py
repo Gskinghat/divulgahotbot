@@ -80,6 +80,19 @@ async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto = f"✅ Bot é administrador em {len(canais_verificados)} canais públicos."
     await update.message.reply_text(texto)
 
+# Função para verificar administradores automaticamente, com fake update e context
+async def verificar_admins_auto(bot):
+    # Criando um fake de update e context para poder passar para a função verificar_admins
+    from telegram import Update
+    from telegram.ext import ContextTypes
+
+    # Criando um fake de 'update' e 'context'
+    fake_update = Update(update_id=0, message=None)  # Usar um objeto de mensagem fake
+    fake_context = ContextTypes.DEFAULT_TYPE(bot=bot)
+
+    # Chamando a função de verificar admins
+    await verificar_admins(fake_update, fake_context)
+
 # Função para enviar mensagem periodicamente
 async def enviar_mensagem_periodica(bot, horario):
     mensagem = f"⏰ Hora de se atualizar! A mensagem programada para {horario} foi enviada!"
@@ -168,7 +181,7 @@ async def main():
     scheduler.add_job(enviar_relatorio_diario, "cron", hour=0, minute=0, args=[app.bot])
     scheduler.add_job(enviar_relatorio_semanal, "interval", weeks=1, args=[app.bot])
     scheduler.add_job(backup_db, "interval", days=1)  # Backup diário
-    scheduler.add_job(verificar_admins, "cron", hour=3, minute=0, args=[app.bot])  # Verificação diária
+    scheduler.add_job(verificar_admins_auto, "cron", hour=3, minute=0, args=[app.bot])  # Verificação automática
     scheduler.start()
 
     app.add_handler(CommandHandler("start", start))
