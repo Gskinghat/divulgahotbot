@@ -158,7 +158,14 @@ async def simular_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Função para lidar com a adição de um novo administrador
 async def novo_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.chat_member:
+        logger.warning("❗ Nenhuma informação sobre o membro encontrada.")
+        return
+
     membro = update.chat_member
+    logger.info(f"Status antigo: {membro.old_chat_member.status}, Status novo: {membro.new_chat_member.status}")
+
+    # Verifique se o status do membro foi alterado para "administrator" ou "creator"
     if membro.new_chat_member.status in ["administrator", "creator"] and membro.old_chat_member.status not in ["administrator", "creator"]:
         canal_nome = membro.chat.title
         add_canal(membro.chat.id)
@@ -208,9 +215,6 @@ async def main():
         'pool_size': 20  # Pool de conexões de 20
     }
 
-    # Excluindo o webhook caso exista (garantindo que polling está sendo usado)
-    await app.bot.delete_webhook(drop_pending_updates=True)
-
     # Agendador de tarefas
     scheduler = AsyncIOScheduler()
 
@@ -228,7 +232,7 @@ async def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
-    app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.CHAT_MEMBER))
+    app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.MY_CHAT_MEMBER))
 
     print("✅ Bot rodando com polling e agendamento diário!")
     await app.run_polling(drop_pending_updates=True)
