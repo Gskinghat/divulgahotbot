@@ -1,4 +1,26 @@
+import asyncio
+import logging
+import sqlite3
+from datetime import datetime
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    Application,
+    ApplicationBuilder,
+    ContextTypes,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import nest_asyncio
+import os
+from shutil import copy
 
+# Configuração do logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Aplicar patch para suportar loop reentrante
 nest_asyncio.apply()
 
 # === CONFIG ===
@@ -87,11 +109,33 @@ async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat.id  # Obtém o chat_id do comando de start
     await update.message.reply_text(f"Seu chat_id é: {chat_id}")
 
-# Função para enviar mensagem periodicamente
-async def enviar_mensagem_periodica(bot, horario):
-    mensagem = f"⏰ Hora de se atualizar! A mensagem programada para {horario} foi enviada!"
-    # Enviar para o admin ou um grupo específico, aqui estou enviando para o ADMIN_ID
-    await bot.send_message(chat_id=ADMIN_ID, text=mensagem)
+# Função para adicionar canais via comando
+async def add_canal_comando(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Verificar se o comando foi enviado por um admin
+    if update.message.from_user.id != ADMIN_ID:
+        await update.message.reply_text("Você não tem permissão para adicionar canais.")
+        return
+
+    # Verificar se foi fornecido um ID de canal
+    if not context.args:
+        await update.message.reply_text("Por favor, forneça o ID do canal para adicionar.")
+        return
+
+    canal_id = context.args[0]  # O ID do canal será o primeiro argumento
+
+    try:
+        canal_id = int(canal_id)  # Certificar-se de que o ID é um número inteiro
+        add_canal(canal_id)
+        await update.message.reply_text(f"Canal {canal_id} adicionado com sucesso!")
+    except ValueError:
+        await update.message.reply_text("O ID do canal deve ser um número válido.")
+
+# Função para adicionar um único canal de teste
+def adicionar_canal_de_teste():
+    # Escolhi o canal do perfil HOT 20: -1002521780775
+    canal_id = -1002521780775
+    add_canal(canal_id)
+    logger.info(f"Canal {canal_id} adicionado ao banco de dados para teste.")
 
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
@@ -115,12 +159,19 @@ async def enviar_mensagem_programada(bot):
             # Buscando o nome real do canal
             chat = await bot.get_chat(canal_id)
             canal_nome = chat.title  # Agora o nome do canal será extraído corretamente
+
+            # Verificando se o canal tem um nome de usuário (isso indica que o canal é público)
+            if chat.username:
+                canal_link = f"https://t.me/{chat.username}"  # Usando o nome de usuário para canais públicos
+            else:
+                canal_link = f"https://t.me/{canal_id}"  # Usando o ID para canais privados
         except Exception as e:
             logger.error(f"Erro ao buscar o nome do canal {canal_id}: {e}")
             canal_nome = f"Canal {canal_id}"  # Caso haja erro, use o ID como fallback
+            canal_link = f"https://t.me/{canal_id}"  # Fallback usando o ID interno
 
-        # Adicionando o botão para cada canal, agora com o nome real
-        buttons.append([InlineKeyboardButton(canal_nome, url=f"https://t.me/{canal_id}")])
+        # Adicionando o botão para cada canal, agora com o nome real e link correto
+        buttons.append([InlineKeyboardButton(canal_nome, url=canal_link)])
 
     # Criação do teclado com os botões
     keyboard = InlineKeyboardMarkup(buttons)
@@ -168,17 +219,20 @@ async def main():
     # Chama a função para criar a tabela 'canais' se não existir
     create_tables()
 
+    # Chama a função para adicionar o canal de teste
+    adicionar_canal_de_teste()
+
     # Ajustando o pool de conexões e o timeout com a API pública
     app.bot._request_kwargs = {
         'timeout': 30,  # Timeout de 30 segundos
         'pool_size': 20  # Pool de conexões de 20
     }
 
-    # Chama a função para adicionar os canais ao banco de dados
-    add_canal(-1002506650062)  # Adicionando um canal de teste (substitua com outros canais conforme necessário)
-
     # Adiciona o comando para pegar o chat ID
     app.add_handler(CommandHandler("get_chat_id", get_chat_id))
+    
+    # Adiciona o comando para adicionar canais
+    app.add_handler(CommandHandler("add_canal", add_canal_comando))  # Comando para adicionar canais
 
     # Adiciona outros handlers
     app.add_handler(CommandHandler("start", start))
