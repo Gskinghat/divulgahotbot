@@ -1,18 +1,4 @@
-import asyncio
-import logging
-import sqlite3
-from datetime import datetime
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Application,
-    ApplicationBuilder,
-    ContextTypes,
-    CommandHandler,
-    MessageHandler,
-    filters,
-)
-from apscheduler.schedulers.asyncio import AsyncIOScheduler  # Aqui é onde o scheduler é importado
-import nest_asyncio
+
 import os
 from shutil import copy
 
