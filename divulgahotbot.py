@@ -163,10 +163,16 @@ async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     await update.message.reply_text(f"Este é o chat ID do grupo: {chat_id}")
 
+# Função para enviar uma mensagem de teste para o canal
+async def enviar_mensagem_teste(bot):
+    canal_id = -1002506650062  # Substitua pelo chat_id do seu canal
+    mensagem = "Olá, este é um teste de interação do bot com o canal!"
+    await bot.send_message(chat_id=canal_id, text=mensagem)
+
 # Lista com os chat IDs dos canais onde o bot é administrador
 chat_ids = [
     # Coloque os chat IDs dos seus grupos aqui
-    # Exemplo: -1001234567890
+    -1002506650062  # Exemplo de chat ID do canal
 ]
 
 # Função para adicionar os chat IDs ao banco de dados
@@ -199,6 +205,7 @@ async def main():
     scheduler.add_job(enviar_relatorio_semanal, "interval", weeks=1, args=[app.bot])
     scheduler.add_job(backup_db, "interval", days=1)  # Backup diário
     scheduler.add_job(verificar_admins_auto, "cron", hour=3, minute=0, args=[app.bot])  # Verificação automática
+    scheduler.add_job(enviar_mensagem_teste, "interval", minutes=5, args=[app.bot])  # Envio de mensagem de teste
     scheduler.start()
 
     # Chama a função para adicionar os canais ao banco de dados
