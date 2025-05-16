@@ -130,12 +130,46 @@ async def add_canal_comando(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except ValueError:
         await update.message.reply_text("O ID do canal deve ser um número válido.")
 
-# Função para adicionar um único canal de teste
-def adicionar_canal_de_teste():
-    # Escolhi o canal do perfil HOT 20: -1002521780775
-    canal_id = -1002521780775
-    add_canal(canal_id)
-    logger.info(f"Canal {canal_id} adicionado ao banco de dados para teste.")
+# Função para adicionar todos os canais novamente
+def adicionar_varios_canais():
+    canal_ids = [
+        # fanny HOT cont
+        -1002649049975, -1002521735139, -1002649646963, -1002648991007, -1002566487140, -1002610733678,
+        -1002631072802, -1002342627563, -1002581311796, -1002645708556,
+
+        # fanny irmã conta
+        -1002261886788, -1002680847721, -1002663744586, -1002576716175, -1002422908996, -1002579739516,
+        -1002305906018, -1002608129630, -1002648451435, -1002632167498,
+
+        # GS
+        -1002634219030, -1002659272412, -1002532471834, -1002555455661, -1002694017662, -1002619113523,
+        -1002663654523, -1002532598032,
+
+        # CONTA 1 CHANEL
+        -1002569779659,
+
+        # CONTA GS MVP
+        -1002637058718, -1002673806655, -1002617005901, -1002591102891, -1002502547461, -1002527153879,
+        -1002547163724, -1002686248264, -1002549685600, -1002683098146,
+
+        # HOT 20
+        -1002521780775, -1002496248801, -1002652344851, -1002510129415, -1002524424215, -1002699745337,
+        -1002620495214, -1002620603496, -1002670501142, -1002293619562, -1002659153687, -1002506650062,
+        -1002689763350, -1002531772113, -1002674038291, -1002670668044, -1002673660530, -1002658512135,
+        -1002521019939, -1002370525614,
+
+        # henrique tele
+        -1002534336418, -1002636065794, -1002592699953, -1002626812866, -1002507566931, -1002448809940,
+        -1002611400878, -1002674890916, -1002592636698, -1002581071012,
+
+        # ALE CONTA
+        -1002676023257, -1002555594530, -1002637517683, -1002614028594, -1002521671210, -1002563919969,
+        -1002320892399, -1002581354578, -1002535585069, -1002662161329
+    ]
+
+    for canal_id in canal_ids:
+        add_canal(canal_id)
+        logger.info(f"Canal {canal_id} adicionado ao banco de dados.")
 
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
@@ -219,8 +253,8 @@ async def main():
     # Chama a função para criar a tabela 'canais' se não existir
     create_tables()
 
-    # Chama a função para adicionar o canal de teste
-    adicionar_canal_de_teste()
+    # Chama a função para adicionar todos os canais novamente
+    adicionar_varios_canais()
 
     # Ajustando o pool de conexões e o timeout com a API pública
     app.bot._request_kwargs = {
