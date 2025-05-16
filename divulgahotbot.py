@@ -129,7 +129,7 @@ async def enviar_mensagem_programada(bot):
             logger.error(f"Erro ao buscar o nome do canal {canal_id}: {e}")
             canal_nome = f"Canal {canal_id}"  # Caso haja erro, use o ID como fallback
 
-        # Adicionando o botão para cada canal
+        # Adicionando o botão para cada canal, agora com o nome real
         buttons.append([InlineKeyboardButton(canal_nome, url=f"https://t.me/{canal_id}")])
 
     # Criação do teclado com os botões
