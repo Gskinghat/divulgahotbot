@@ -4,10 +4,10 @@ import sqlite3
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
+    Application,
     ApplicationBuilder,
     ContextTypes,
     CommandHandler,
-    ChatMemberHandler,
     MessageHandler,
     filters,
 )
@@ -108,38 +108,32 @@ async def exibir_canais(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Envia a mensagem com a lista de canais e botões clicáveis
     await update.message.reply_text("🔗 Lista de Canais Cadastrados:", reply_markup=keyboard)
 
-# Função para enviar a lista de canais para o grupo onde o bot foi adicionado
-async def enviar_lista_de_canais_para_novo_admin(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
-    canais = get_canais()  # Pega os canais cadastrados
-    if not canais:
-        await context.bot.send_message(chat_id=chat_id, text="Nenhum canal cadastrado.")
-        return
-    
-    # Mensagem personalizada antes da lista de canais
-    mensagem = (
-        "💎: {𝗟 𝗜 𝗦 𝗧 𝗔 𝗛𝗢𝗧 🔞👑} \n"
-        "A MELHOR lista quente do Telegram\n"
-        "Cadastre-se 👉 @divulgalistahotbot 🤖💎\n\n"
-        "🔗 Lista de Canais e Grupos disponíveis:\n"
-    )
-    await context.bot.send_message(chat_id=chat_id, text=mensagem)
+# Função para verificar se o bot é ADM do canal e enviar lista de canais
+async def verificar_adm_e_publicar(bot, chat_id):
+    try:
+        # Verifica se o bot é administrador do canal
+        member = await bot.get_chat_member(chat_id, bot.id)
+        if member.status == "administrator":
+            # Se for ADM, envia a lista de canais
+            canais = get_canais()
+            if not canais:
+                await bot.send_message(chat_id=chat_id, text="Nenhum canal cadastrado.")
+                return
 
-    # Criação da lista de botões
-    buttons = []
-    for canal in canais:
-        canal_id = canal[0]  # Canal ID armazenado no banco
-        canal_nome = f"Canal {canal_id}"  # Defina um nome ou recupere do banco
-        buttons.append([InlineKeyboardButton(canal_nome, url=f"https://t.me/{canal_id}")])  # Adiciona o botão para cada canal
-    
-    # Adiciona a tecla de resposta
-    keyboard = InlineKeyboardMarkup(buttons)
-    
-    # Envia a mensagem para o novo grupo com a lista de canais
-    await context.bot.send_message(chat_id=chat_id, text="🔗 Lista de Canais Cadastrados:", reply_markup=keyboard)
+            # Criação da lista de botões
+            buttons = []
+            for canal in canais:
+                canal_id = canal[0]  # Canal ID armazenado no banco
+                canal_nome = f"Canal {canal_id}"  # Defina um nome ou recupere do banco
+                buttons.append([InlineKeyboardButton(canal_nome, url=f"https://t.me/{canal_id}")])
 
-# Função de status
-async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await exibir_canais(update, context)
+            keyboard = InlineKeyboardMarkup(buttons)
+            # Envia a mensagem com a lista de canais
+            await bot.send_message(chat_id=chat_id, text="🔗 Lista de Canais Cadastrados:", reply_markup=keyboard)
+        else:
+            logger.warning(f"O bot não é administrador do canal {chat_id}. Não foi possível enviar a lista.")
+    except Exception as e:
+        logger.error(f"Erro ao verificar admin do canal {chat_id}: {e}")
 
 # Função de boas-vindas personalizada
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -148,79 +142,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Bem-vindo, {user_name}! 🎉\n\n"
         "Para adicionar seu canal, basta tornar o bot administrador. Aproveite os benefícios!"
     )
-
-# Função de simulação de visualização
-async def simular_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    total_views = get_views() + 1
-    update_views(total_views)  # Atualiza o banco de dados com o novo número de views
-    await update.message.reply_text(f"👀 Mais uma visualização registrada! Total do dia: {total_views} 🎯")
-
-# Função para verificar se o bot já é administrador no canal
-async def verificar_admin_canal(bot, chat_id):
-    try:
-        # Verifica se o bot é administrador do canal
-        chat_member = await bot.get_chat_member(chat_id, bot.id)
-        if chat_member.status in ["administrator", "creator"]:
-            logger.info(f"Bot já é administrador do canal {chat_id}")
-            return True
-        else:
-            logger.info(f"Bot não é administrador do canal {chat_id}")
-            return False
-    except Exception as e:
-        logger.error(f"Erro ao verificar administrador no canal {chat_id}: {e}")
-        return False
-
-# Função para lidar com a adição de um novo administrador
-async def novo_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.chat_member:
-        logger.warning("❗ Nenhuma informação sobre o membro encontrada.")
-        return
-
-    membro = update.chat_member
-    logger.info(f"Status antigo: {membro.old_chat_member.status}, Status novo: {membro.new_chat_member.status}")
-
-    # Verifique se o status do membro foi alterado para "administrator" ou "creator"
-    if membro.new_chat_member.status in ["administrator", "creator"] and membro.old_chat_member.status not in ["administrator", "creator"]:
-        canal_nome = membro.chat.title
-        add_canal(membro.chat.id)
-
-        try:
-            await context.bot.send_message(
-                chat_id=membro.from_user.id,
-                text=f"🎉 Caro Administrador {membro.from_user.first_name}, Seu Canal ({canal_nome}) foi APROVADO em nossa lista!! 🎉\n\n"
-                     "Não se esqueça de sempre cumprir os requisitos para permanecer na lista!\n\n"
-                     "Atenciosamente, Pai Black"
-            )
-            # Verificar se o bot já é administrador no canal
-            admin_status = await verificar_admin_canal(context.bot, membro.chat.id)
-                
-            if not admin_status:
-                logger.info(f"Bot ainda não é administrador no canal: {canal_nome}")
-                # Aqui você pode adicionar o bot como admin no canal, se necessário
-        except Exception as e:
-            logger.error(f"Erro ao enviar mensagem para o ADM de {canal_nome}: {e}")
-            await context.bot.send_message(
-                chat_id=ADMIN_ID,
-                text=f"❗ Não consegui enviar para o ADM de {canal_nome}. Talvez o bot não tenha permissão."
-            )
-
-# Sistema de rankings
-async def enviar_relatorio_semanal(context: ContextTypes.DEFAULT_TYPE):
-    # Exemplo de ranking semanal
-    ranking = get_weekly_ranking()
-    texto = "🏆 Ranking Semanal dos Canais Mais Visualizados:\n\n"
-    for rank, (canal_id, views) in enumerate(ranking, 1):
-        texto += f"{rank}. Canal {canal_id}: {views} visualizações\n"
-    
-    await context.bot.send_message(chat_id=ADMIN_ID, text=texto)
-
-# Função de backup
-def backup_db():
-    from shutil import copy
-    from datetime import datetime
-    backup_file = f"backup_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.db"
-    copy('bot_data.db', backup_file)
-    print(f"Backup realizado com sucesso: {backup_file}")
 
 # Main
 async def main():
@@ -248,9 +169,7 @@ async def main():
     scheduler.start()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("status", status))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
-    app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.MY_CHAT_MEMBER))
 
     print("✅ Bot rodando com polling e agendamento diário!")
     await app.run_polling(drop_pending_updates=True)
