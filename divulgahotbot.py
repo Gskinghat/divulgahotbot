@@ -111,14 +111,24 @@ async def enviar_mensagem_programada(bot):
 
     # Adicionando a lista de canais à mensagem no formato desejado
     canais = get_canais()  # Pegando a lista de canais
+    buttons = []  # Lista para armazenar os botões
+
     for canal in canais:
         canal_id = canal[0]  # ID do canal
         canal_nome = f"🔗 Canal {canal_id}"  # Nome do canal ou outra informação que você deseja exibir
-        mensagem += f"⭐️ {canal_nome}: https://t.me/{canal_id}\n"
+
+        # Adicionando o botão para cada canal
+        buttons.append([InlineKeyboardButton(canal_nome, url=f"https://t.me/{canal_id}")])
+
+    # Criação do teclado com os botões
+    keyboard = InlineKeyboardMarkup(buttons)
 
     # Enviando a mensagem para o canal público
     canal_id = -1002506650062  # Substitua pelo chat_id do seu canal
-    await bot.send_message(chat_id=canal_id, text=mensagem, parse_mode="Markdown")
+    mensagem_com_botões = mensagem  # Mensagem com a parte personalizada, sem os botões ainda
+
+    # Envia a mensagem com os botões clicáveis
+    await bot.send_message(chat_id=canal_id, text=mensagem_com_botões, reply_markup=keyboard, parse_mode="Markdown")
 
     print("Mensagem enviada com sucesso!")  # Log para confirmar que a mensagem foi enviada
 
