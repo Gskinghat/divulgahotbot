@@ -43,6 +43,18 @@ def get_db_connection():
 def close_db_connection(conn):
     conn.close()
 
+# Função para criar a tabela canais caso não exista
+def create_tables():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS canais (
+        chat_id INTEGER PRIMARY KEY
+    )
+    """)
+    conn.commit()
+    close_db_connection(conn)
+
 # Funções de persistência
 def get_views():
     conn = get_db_connection()
@@ -175,8 +187,8 @@ async def main():
     # Configuração do bot com pool e timeout ajustados
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Removido o set_webhook() já que estamos usando polling
-    # Não é necessário configurar webhook quando usamos polling
+    # Chama a função para criar a tabela 'canais' se não existir
+    create_tables()
 
     # Ajustando o pool de conexões e o timeout com a API pública
     app.bot._request_kwargs = {
