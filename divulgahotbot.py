@@ -165,6 +165,7 @@ async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
+    print("Tentando enviar a mensagem...")  # Adicionando um log para verificar
     hoje = datetime.now().strftime("%d/%m/%Y")
     total_views = get_views()
     total_canais = len(get_canais())
@@ -187,6 +188,9 @@ async def enviar_mensagem_programada(bot):
     canal_id = -1002506650062  # Substitua pelo chat_id do seu canal
     await bot.send_message(chat_id=canal_id, text=mensagem, parse_mode="Markdown")
 
+# Inicializando o agendador corretamente
+scheduler = AsyncIOScheduler()  # Agora o scheduler é inicializado corretamente
+
 # Main
 async def main():
     # Configuração do bot com pool e timeout ajustados
@@ -198,13 +202,6 @@ async def main():
         'pool_size': 20  # Pool de conexões de 20
     }
 
-    # Inicializando o agendador corretamente
-    scheduler = AsyncIOScheduler()  # Agora o scheduler é inicializado corretamente
-
-    # Adicionando as tarefas no agendador
-    scheduler.add_job(enviar_mensagem_programada, "cron", hour=10, minute=0, args=[app.bot])  # Alterar horário conforme necessidade
-    scheduler.start()  # Iniciando o scheduler
-
     # Chama a função para adicionar os canais ao banco de dados
     add_canal(-1002506650062)  # Adicionando um canal de teste (substitua com outros canais conforme necessário)
 
@@ -215,6 +212,10 @@ async def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("verificar_admins", verificar_admins))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
+
+    # Agendando as mensagens
+    scheduler.add_job(enviar_mensagem_programada, "cron", hour=10, minute=0, args=[app.bot])  # Alterar horário conforme necessidade
+    scheduler.start()  # Iniciando o scheduler
 
     print("✅ Bot rodando com polling e agendamento diário!")
     await app.run_polling(drop_pending_updates=True)
