@@ -64,6 +64,22 @@ def get_canais():
 
 # === FUNÇÕES ===
 
+# Função para verificar os canais onde o bot é administrador
+async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    bot = context.bot
+    canais_verificados = []
+
+    async for canal in get_canais():  # Lista dos canais cadastrados
+        try:
+            membro = await bot.get_chat_member(canal[0], bot.id)
+            if membro.status in ["administrator", "creator"]:
+                canais_verificados.append(canal[0])
+        except Exception as e:
+            logger.error(f"Erro ao verificar {canal[0]}: {e}")
+
+    texto = f"✅ Bot é administrador em {len(canais_verificados)} canais públicos."
+    await update.message.reply_text(texto)
+
 # Função para enviar mensagem periodicamente
 async def enviar_mensagem_periodica(bot, horario):
     mensagem = f"⏰ Hora de se atualizar! A mensagem programada para {horario} foi enviada!"
@@ -107,26 +123,6 @@ async def enviar_relatorio_semanal(context: ContextTypes.DEFAULT_TYPE):
         update_views(0)  # Resetando o contador de visualizações
     except Exception as e:
         logger.error(f"Erro ao enviar relatório semanal: {e}")
-
-# Função para exibir os canais com botões clicáveis
-async def exibir_canais(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    canais = get_canais()  # Pega os canais cadastrados no banco de dados
-    if not canais:
-        await update.message.reply_text("Nenhum canal cadastrado ainda.")
-        return
-    
-    # Criação da lista de botões
-    buttons = []
-    for canal in canais:
-        canal_id = canal[0]  # Canal ID armazenado no banco
-        canal_nome = f"Canal {canal_id}"  # Defina um nome ou recupere do banco
-        buttons.append([InlineKeyboardButton(canal_nome, url=f"https://t.me/{canal_id}")])  # Adiciona o botão para cada canal
-    
-    # Adiciona a tecla de resposta
-    keyboard = InlineKeyboardMarkup(buttons)
-    
-    # Envia a mensagem com a lista de canais e botões clicáveis
-    await update.message.reply_text("🔗 Lista de Canais Cadastrados:", reply_markup=keyboard)
 
 # Função de boas-vindas personalizada
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -172,9 +168,11 @@ async def main():
     scheduler.add_job(enviar_relatorio_diario, "cron", hour=0, minute=0, args=[app.bot])
     scheduler.add_job(enviar_relatorio_semanal, "interval", weeks=1, args=[app.bot])
     scheduler.add_job(backup_db, "interval", days=1)  # Backup diário
+    scheduler.add_job(verificar_admins, "cron", hour=3, minute=0, args=[app.bot])  # Verificação diária
     scheduler.start()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("verificar_admins", verificar_admins))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
 
     print("✅ Bot rodando com polling e agendamento diário!")
