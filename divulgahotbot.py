@@ -262,20 +262,12 @@ async def main():
         'pool_size': 20  # Pool de conexões de 20
     }
 
-    # Adiciona o comando para pegar o chat ID
-    app.add_handler(CommandHandler("get_chat_id", get_chat_id))
-    
-    # Adiciona o comando para adicionar canais
-    app.add_handler(CommandHandler("add_canal", add_canal_comando))  # Comando para adicionar canais
-
-    # Adiciona outros handlers
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("verificar_admins", verificar_admins))
-    app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
-
-    # Agendando as mensagens a cada 1 minuto
+    # Agendando as mensagens para horários específicos
     try:
-        scheduler.add_job(enviar_mensagem_programada, "cron", minute="*", args=[app.bot])  # Envia a cada 1 minuto
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=18, minute=0, args=[app.bot])  # 18h
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=22, minute=0, args=[app.bot])  # 22h
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=4, minute=0, args=[app.bot])   # 4h
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=11, minute=0, args=[app.bot])  # 11h
         scheduler.start()  # Iniciando o scheduler
     except Exception as e:
         logger.error(f"Erro ao agendar tarefa: {e}")
