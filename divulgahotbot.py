@@ -1,4 +1,18 @@
-
+import asyncio
+import logging
+import sqlite3
+from datetime import datetime
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    Application,
+    ApplicationBuilder,
+    ContextTypes,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import nest_asyncio
 import os
 from shutil import copy
 
@@ -15,10 +29,6 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
-
-if not BOT_TOKEN or not ADMIN_ID:
-    logger.error("BOT_TOKEN e/ou ADMIN_ID não definidos nas variáveis de ambiente!")
-    exit(1)
 
 # Banco de dados SQLite para persistência
 conn = sqlite3.connect('bot_data.db')
@@ -70,10 +80,17 @@ async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto = f"✅ Bot é administrador em {len(canais_verificados)} canais públicos."
     await update.message.reply_text(texto)
 
-# Função para obter o chat_id
-async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.message.chat.id  # Obtém o chat_id do comando de start
-    await update.message.reply_text(f"Seu chat_id é: {chat_id}")
+# Função para verificar administradores automaticamente, com fake update e context
+async def verificar_admins_auto(bot):
+    from telegram import Update
+    from telegram.ext import ContextTypes
+
+    # Criando um fake de 'update' e 'context'
+    fake_update = Update(update_id=0, message=None)  # Usar um objeto de mensagem fake
+    fake_context = ContextTypes.DEFAULT_TYPE(bot=bot)
+
+    # Chamando a função de verificar admins
+    await verificar_admins(fake_update, fake_context)
 
 # Função para enviar mensagem periodicamente
 async def enviar_mensagem_periodica(bot, horario):
@@ -115,12 +132,13 @@ async def enviar_mensagem_programada(bot):
 
     print("Mensagem enviada com sucesso!")  # Log para confirmar que a mensagem foi enviada
 
-# Função para iniciar o bot
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Olá! Eu sou o bot e estou pronto para ajudar!")
-
 # Inicializando o agendador corretamente
 scheduler = AsyncIOScheduler()  # Agora o scheduler é inicializado corretamente
+
+# Função de start para mostrar o chat_id
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat.id  # Obtém o chat_id do usuário que chamou o bot
+    await update.message.reply_text(f"Seu chat_id é: {chat_id}")
 
 # Main
 async def main():
@@ -137,18 +155,15 @@ async def main():
     add_canal(-1002506650062)  # Adicionando um canal de teste (substitua com outros canais conforme necessário)
 
     # Adiciona o comando para pegar o chat ID
-    app.add_handler(CommandHandler("get_chat_id", get_chat_id))
+    app.add_handler(CommandHandler("get_chat_id", start))
 
     # Adiciona outros handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("verificar_admins", verificar_admins))
 
     # Agendando as mensagens a cada 1 minuto
-    try:
-        scheduler.add_job(enviar_mensagem_programada, "cron", minute="*", args=[app.bot])  # Envia a cada 1 minuto
-        scheduler.start()  # Iniciando o scheduler
-    except Exception as e:
-        logger.error(f"Erro ao agendar tarefa: {e}")
+    scheduler.add_job(enviar_mensagem_programada, "cron", minute="*", args=[app.bot])  # Envia a cada 1 minuto
+    scheduler.start()  # Iniciando o scheduler
 
     print("✅ Bot rodando com polling e agendamento diário!")
     await app.run_polling(drop_pending_updates=True)
