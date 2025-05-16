@@ -27,7 +27,7 @@ nest_asyncio.apply()
 from dotenv import load_dotenv
 load_dotenv()
 
-BOT_TOKEN = "7664156068:AAEsh9NV-eYIP7i_Z12z8UsL6K_36cdLTBQ"  # Token do seu bot
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 # Banco de dados SQLite para persistência
@@ -88,25 +88,6 @@ async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
         update_views(0)  # Resetando o contador de visualizações
     except Exception as e:
         logger.error(f"Erro ao enviar relatório diário: {e}")
-
-# Função para enviar o relatório semanal
-async def enviar_relatorio_semanal(context: ContextTypes.DEFAULT_TYPE):
-    hoje = datetime.now().strftime("%d/%m/%Y")
-    total_views = get_views()
-    total_canais = len(get_canais())
-
-    texto = (
-        f"📈 Relatório Semanal – {hoje}\n\n"
-        f"Total de visualizações nas listas esta semana: {total_views:,} 👀\n"
-        f"Total de canais participantes: {total_canais}\n\n"
-        "Continue ativo para manter sua visibilidade no topo, ande com grandes, abraços Tio King! 🚀"
-    )
-
-    try:
-        await context.bot.send_message(chat_id=ADMIN_ID, text=texto)
-        update_views(0)  # Resetando o contador de visualizações
-    except Exception as e:
-        logger.error(f"Erro ao enviar relatório semanal: {e}")
 
 # Função para exibir os canais com botões clicáveis
 async def exibir_canais(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -178,20 +159,18 @@ async def simular_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Função para lidar com a adição de um novo administrador
 async def novo_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     membro = update.chat_member
-    if membro.new_chat_member.status in ["administrator", "creator"]:
-        # Se o membro é um novo administrador ou criador, adicionar o chat_id ao banco
+    if membro.new_chat_member.status in ["administrator", "creator"] and membro.old_chat_member.status not in ["administrator", "creator"]:
+        canal_nome = membro.chat.title
         add_canal(membro.chat.id)
 
         try:
-            # Enviar mensagem de boas-vindas ao novo administrador
-            canal_nome = membro.chat.title
             await context.bot.send_message(
                 chat_id=membro.from_user.id,
                 text=f"🎉 Caro Administrador {membro.from_user.first_name}, Seu Canal ({canal_nome}) foi APROVADO em nossa lista!! 🎉\n\n"
                      "Não se esqueça de sempre cumprir os requisitos para permanecer na lista!\n\n"
                      "Atenciosamente, Pai Black"
             )
-            # Enviar a lista de canais para o novo grupo
+            # Enviar a lista de canais para o novo canal/grupo
             await enviar_lista_de_canais_para_novo_admin(membro.chat.id, context)
         except Exception as e:
             logger.error(f"Erro ao enviar mensagem para o ADM de {canal_nome}: {e}")
@@ -199,6 +178,16 @@ async def novo_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 chat_id=ADMIN_ID,
                 text=f"❗ Não consegui enviar para o ADM de {canal_nome}. Talvez o bot não tenha permissão."
             )
+
+# Sistema de rankings
+async def enviar_relatorio_semanal(context: ContextTypes.DEFAULT_TYPE):
+    # Exemplo de ranking semanal
+    ranking = get_weekly_ranking()
+    texto = "🏆 Ranking Semanal dos Canais Mais Visualizados:\n\n"
+    for rank, (canal_id, views) in enumerate(ranking, 1):
+        texto += f"{rank}. Canal {canal_id}: {views} visualizações\n"
+    
+    await context.bot.send_message(chat_id=ADMIN_ID, text=texto)
 
 # Função de backup
 def backup_db():
@@ -218,6 +207,9 @@ async def main():
         'timeout': 30,  # Timeout de 30 segundos
         'pool_size': 20  # Pool de conexões de 20
     }
+
+    # Excluindo o webhook caso exista (garantindo que polling está sendo usado)
+    await app.bot.delete_webhook(drop_pending_updates=True)
 
     # Agendador de tarefas
     scheduler = AsyncIOScheduler()
