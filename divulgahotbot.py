@@ -213,8 +213,8 @@ async def main():
     app.add_handler(CommandHandler("verificar_admins", verificar_admins))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
 
-    # Agendando as mensagens
-    scheduler.add_job(enviar_mensagem_programada, "cron", hour=10, minute=0, args=[app.bot])  # Alterar horário conforme necessidade
+    # Agendando as mensagens a cada 1 minuto
+    scheduler.add_job(enviar_mensagem_programada, "cron", minute="1", args=[app.bot])  # Envia a cada 1 minuto
     scheduler.start()  # Iniciando o scheduler
 
     print("✅ Bot rodando com polling e agendamento diário!")
