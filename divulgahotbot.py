@@ -1,4 +1,18 @@
-
+import asyncio
+import logging
+import sqlite3
+from datetime import datetime
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    Application,
+    ApplicationBuilder,
+    ContextTypes,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import nest_asyncio
 import os
 from shutil import copy
 
@@ -68,7 +82,6 @@ async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Função para verificar administradores automaticamente, com fake update e context
 async def verificar_admins_auto(bot):
-    # Criando um fake de update e context para poder passar para a função verificar_admins
     from telegram import Update
     from telegram.ext import ContextTypes
 
@@ -85,90 +98,23 @@ async def enviar_mensagem_periodica(bot, horario):
     # Enviar para o admin ou um grupo específico, aqui estou enviando para o ADMIN_ID
     await bot.send_message(chat_id=ADMIN_ID, text=mensagem)
 
-# Função para enviar o relatório diário
-async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
-    hoje = datetime.now().strftime("%d/%m/%Y")
-    total_views = get_views()
-    total_canais = len(get_canais())
-
-    texto = (
-        f"📈 Relatório Diário – {hoje}\n\n"
-        f"Total de visualizações nas listas hoje: {total_views:,} 👀\n"
-        f"Total de canais participantes: {total_canais}\n\n"
-        "Continue ativo para manter sua visibilidade no topo, ande com grandes, abraços Tio King! 🚀"
-    )
-
-    try:
-        await context.bot.send_message(chat_id=ADMIN_ID, text=texto)
-        update_views(0)  # Resetando o contador de visualizações
-    except Exception as e:
-        logger.error(f"Erro ao enviar relatório diário: {e}")
-
-# Função para enviar o relatório semanal
-async def enviar_relatorio_semanal(context: ContextTypes.DEFAULT_TYPE):
-    hoje = datetime.now().strftime("%d/%m/%Y")
-    total_views = get_views()
-    total_canais = len(get_canais())
-
-    texto = (
-        f"🏆 Relatório Semanal – {hoje}\n\n"
-        f"Total de visualizações nas listas esta semana: {total_views:,} 👀\n"
-        f"Total de canais participantes: {total_canais}\n\n"
-        "Mantenha-se firme para continuar aumentando sua visibilidade, que a semana promete! 💪🚀"
-    )
-
-    try:
-        await context.bot.send_message(chat_id=ADMIN_ID, text=texto)
-        update_views(0)  # Resetando o contador de visualizações
-    except Exception as e:
-        logger.error(f"Erro ao enviar relatório semanal: {e}")
-
-# Função de boas-vindas personalizada
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_name = update.effective_user.first_name
-    await update.message.reply_text(
-        f"Bem-vindo, {user_name}! 🎉\n\n"
-        "Para adicionar seu canal, basta tornar o bot administrador. Aproveite os benefícios!"
-    )
-
-# Função de simulação de visualização
-async def simular_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    total_views = get_views() + 1
-    update_views(total_views)  # Atualiza o banco de dados com o novo número de views
-    await update.message.reply_text(f"👀 Mais uma visualização registrada! Total do dia: {total_views} 🎯")
-
-# Função para fazer backup do banco de dados
-def backup_db():
-    # Backup do banco de dados SQLite
-    backup_file = f"backup_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.db"
-    copy('bot_data.db', backup_file)
-    print(f"Backup realizado com sucesso: {backup_file}")
-
-# Função para obter o chat_id do grupo
-async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.message.chat_id
-    await update.message.reply_text(f"Este é o chat ID do grupo: {chat_id}")
-
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
-    print("Tentando enviar a mensagem...")  # Adicionando um log para verificar
-    hoje = datetime.now().strftime("%d/%m/%Y")
-    total_views = get_views()
-    total_canais = len(get_canais())
+    print("Tentando enviar a mensagem...")  # Log para verificar se a função está sendo chamada
 
-    # Parte personalizada da mensagem
+    # Cabeçalho da mensagem personalizada
     mensagem = (
         "💎: {𝗟 𝗜 𝗦 𝗧 𝗔 𝗛𝗢𝗧 🔞👑}\n\n"
         "A MELHOR lista quente do Telegram\n"
         "👇Veja todos os canais disponíveis👇\n\n"
     )
 
-    # Adicionando a lista de canais à mensagem
-    canais = get_canais()
+    # Adicionando a lista de canais à mensagem no formato desejado
+    canais = get_canais()  # Pegando a lista de canais
     for canal in canais:
         canal_id = canal[0]  # ID do canal
-        canal_nome = f"Canal {canal_id}"  # Nome do canal ou outra informação que você deseja exibir
-        mensagem += f"🔗 {canal_nome}: https://t.me/{canal_id}\n"
+        canal_nome = f"🔗 Canal {canal_id}"  # Nome do canal ou outra informação que você deseja exibir
+        mensagem += f"⭐️ {canal_nome}: https://t.me/{canal_id}\n"
 
     # Enviando a mensagem para o canal público
     canal_id = -1002506650062  # Substitua pelo chat_id do seu canal
