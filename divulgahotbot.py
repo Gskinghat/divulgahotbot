@@ -207,17 +207,14 @@ async def enviar_mensagem_programada(bot):
         # Adicionando o botão para cada canal, agora com o nome real e link correto
         buttons.append([InlineKeyboardButton(canal_nome, url=canal_link)])
 
-    # Criação do teclado com os botões
-    keyboard = InlineKeyboardMarkup(buttons)
+        try:
+            # Enviando a mensagem para o canal
+            await bot.send_message(chat_id=canal_id, text=mensagem, reply_markup=InlineKeyboardMarkup(buttons), parse_mode="Markdown")
+            print(f"Mensagem enviada com sucesso para o canal {canal_id}")  # Log de sucesso
+        except Exception as e:
+            logger.error(f"Erro ao enviar mensagem para o canal {canal_id}: {e}")
 
-    # Enviando a mensagem para o canal público
-    canal_id = -1002506650062  # Substitua pelo chat_id do seu canal
-    mensagem_com_botões = mensagem  # Mensagem com a parte personalizada, sem os botões ainda
-
-    # Envia a mensagem com os botões clicáveis
-    await bot.send_message(chat_id=canal_id, text=mensagem_com_botões, reply_markup=keyboard, parse_mode="Markdown")
-
-    print("Mensagem enviada com sucesso!")  # Log para confirmar que a mensagem foi enviada
+    print("Mensagens enviadas para todos os canais!")  # Log para confirmar que a mensagem foi enviada para todos os canais
 
 # Função para calcular visualizações e enviar relatório
 async def simular_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
