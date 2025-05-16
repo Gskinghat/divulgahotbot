@@ -4,7 +4,6 @@ import sqlite3
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    Application,
     ApplicationBuilder,
     ContextTypes,
     CommandHandler,
@@ -156,6 +155,21 @@ async def simular_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     update_views(total_views)  # Atualiza o banco de dados com o novo número de views
     await update.message.reply_text(f"👀 Mais uma visualização registrada! Total do dia: {total_views} 🎯")
 
+# Função para verificar se o bot já é administrador no canal
+async def verificar_admin_canal(bot, chat_id):
+    try:
+        # Verifica se o bot é administrador do canal
+        chat_member = await bot.get_chat_member(chat_id, bot.id)
+        if chat_member.status in ["administrator", "creator"]:
+            logger.info(f"Bot já é administrador do canal {chat_id}")
+            return True
+        else:
+            logger.info(f"Bot não é administrador do canal {chat_id}")
+            return False
+    except Exception as e:
+        logger.error(f"Erro ao verificar administrador no canal {chat_id}: {e}")
+        return False
+
 # Função para lidar com a adição de um novo administrador
 async def novo_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.chat_member:
@@ -177,8 +191,12 @@ async def novo_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
                      "Não se esqueça de sempre cumprir os requisitos para permanecer na lista!\n\n"
                      "Atenciosamente, Pai Black"
             )
-            # Enviar a lista de canais para o novo canal/grupo
-            await enviar_lista_de_canais_para_novo_admin(membro.chat.id, context)
+            # Verificar se o bot já é administrador no canal
+            admin_status = await verificar_admin_canal(context.bot, membro.chat.id)
+                
+            if not admin_status:
+                logger.info(f"Bot ainda não é administrador no canal: {canal_nome}")
+                # Aqui você pode adicionar o bot como admin no canal, se necessário
         except Exception as e:
             logger.error(f"Erro ao enviar mensagem para o ADM de {canal_nome}: {e}")
             await context.bot.send_message(
