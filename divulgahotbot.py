@@ -158,24 +158,15 @@ def backup_db():
     copy('bot_data.db', backup_file)
     print(f"Backup realizado com sucesso: {backup_file}")
 
+# Função para obter o chat_id do grupo
+async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat_id
+    await update.message.reply_text(f"Este é o chat ID do grupo: {chat_id}")
+
 # Lista com os chat IDs dos canais onde o bot é administrador
 chat_ids = [
-    -1002649049975, -1002521735139, -1002649646963, -1002648991007, -1002566487140,
-    -1002610733678, -1002631072802, -1002342627563, -1002581311796, -1002645708556,
-    -1002261886788, -1002680847721, -1002663744586, -1002576716175, -1002422908996,
-    -1002579739516, -1002305906018, -1002608129630, -1002648451435, -1002632167498,
-    -1002634219030, -1002659272412, -1002532471834, -1002555455661, -1002694017662,
-    -1002619113523, -1002663654523, -1002532598032, -1002569779659, -1002637058718,
-    -1002673806655, -1002617005901, -1002591102891, -1002502547461, -1002527153879,
-    -1002547163724, -1002686248264, -1002549685600, -1002683098146, -1002521780775,
-    -1002496248801, -1002652344851, -1002510129415, -1002524424215, -1002699745337,
-    -1002620495214, -1002620603496, -1002670501142, -1002293619562, -1002659153687,
-    -1002506650062, -1002689763350, -1002531772113, -1002674038291, -1002670668044,
-    -1002673660530, -1002658512135, -1002521019939, -1002370525614, -1002534336418,
-    -1002636065794, -1002592699953, -1002626812866, -1002507566931, -1002448809940,
-    -1002611400878, -1002674890916, -1002592636698, -1002581071012, -1002676023257,
-    -1002555594530, -1002637517683, -1002614028594, -1002521671210, -1002563919969,
-    -1002320892399, -1002581354578, -1002535585069, -1002662161329
+    # Coloque os chat IDs dos seus grupos aqui
+    # Exemplo: -1001234567890
 ]
 
 # Função para adicionar os chat IDs ao banco de dados
@@ -213,6 +204,10 @@ async def main():
     # Chama a função para adicionar os canais ao banco de dados
     add_canais()
 
+    # Adiciona o comando para pegar o chat ID
+    app.add_handler(CommandHandler("get_chat_id", get_chat_id))
+
+    # Adiciona outros handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("verificar_admins", verificar_admins))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
