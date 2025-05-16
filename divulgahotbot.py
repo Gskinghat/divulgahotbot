@@ -163,23 +163,32 @@ async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     await update.message.reply_text(f"Este é o chat ID do grupo: {chat_id}")
 
-# Função para enviar uma mensagem de teste para o canal
-async def enviar_mensagem_teste(bot):
+# Função para enviar a mensagem personalizada com a lista de canais
+async def enviar_mensagem_programada(bot):
+    hoje = datetime.now().strftime("%d/%m/%Y")
+    total_views = get_views()
+    total_canais = len(get_canais())
+
+    # Parte personalizada da mensagem
+    mensagem = (
+        "💎: {𝗟 𝗜 𝗦 𝗧 𝗔 𝗛𝗢𝗧 🔞👑}\n\n"
+        "A MELHOR lista quente do Telegram\n"
+        "👇Veja todos os canais disponíveis👇\n\n"
+    )
+
+    # Adicionando a lista de canais à mensagem
+    canais = get_canais()
+    for canal in canais:
+        canal_id = canal[0]  # ID do canal
+        canal_nome = f"Canal {canal_id}"  # Nome do canal ou outra informação que você deseja exibir
+        mensagem += f"🔗 {canal_nome}: https://t.me/{canal_id}\n"
+
+    # Enviando a mensagem para o canal público
     canal_id = -1002506650062  # Substitua pelo chat_id do seu canal
-    mensagem = "Olá, este é um teste de interação do bot com o canal!"
-    await bot.send_message(chat_id=canal_id, text=mensagem)
+    await bot.send_message(chat_id=canal_id, text=mensagem, parse_mode="Markdown")
 
-# Lista com os chat IDs dos canais onde o bot é administrador
-chat_ids = [
-    # Coloque os chat IDs dos seus grupos aqui
-    -1002506650062  # Exemplo de chat ID do canal
-]
-
-# Função para adicionar os chat IDs ao banco de dados
-def add_canais():
-    for chat_id in chat_ids:
-        add_canal(chat_id)
-        logger.info(f"Canal {chat_id} adicionado com sucesso ao banco de dados.")
+# Adicionando a função ao agendador para ser enviada uma vez programada
+scheduler.add_job(enviar_mensagem_programada, "cron", hour=10, minute=0, args=[app.bot])  # Alterar horário conforme necessidade
 
 # Main
 async def main():
@@ -205,7 +214,7 @@ async def main():
     scheduler.add_job(enviar_relatorio_semanal, "interval", weeks=1, args=[app.bot])
     scheduler.add_job(backup_db, "interval", days=1)  # Backup diário
     scheduler.add_job(verificar_admins_auto, "cron", hour=3, minute=0, args=[app.bot])  # Verificação automática
-    scheduler.add_job(enviar_mensagem_teste, "interval", minutes=5, args=[app.bot])  # Envio de mensagem de teste
+    scheduler.add_job(enviar_mensagem_programada, "interval", minutes=5, args=[app.bot])  # Envio de mensagem programada
     scheduler.start()
 
     # Chama a função para adicionar os canais ao banco de dados
