@@ -175,8 +175,10 @@ async def main():
     # Configuração do bot com pool e timeout ajustados
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    # Removido o set_webhook() já que estamos usando polling
+    # Não é necessário configurar webhook quando usamos polling
+
     # Ajustando o pool de conexões e o timeout com a API pública
-    app.bot.set_webhook()
     app.bot._request_kwargs = {
         'timeout': 30,  # Timeout de 30 segundos
         'pool_size': 20  # Pool de conexões de 20
