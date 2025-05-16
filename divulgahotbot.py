@@ -11,7 +11,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from apscheduler.schedulers.asyncio import AsyncIOScheduler  # Corrigido aqui
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # Aqui é onde o scheduler é importado
 import nest_asyncio
 import os
 from shutil import copy
@@ -187,8 +187,8 @@ async def enviar_mensagem_programada(bot):
     canal_id = -1002506650062  # Substitua pelo chat_id do seu canal
     await bot.send_message(chat_id=canal_id, text=mensagem, parse_mode="Markdown")
 
-# Inicializando o agendador
-scheduler = AsyncIOScheduler()
+# Inicializando o agendador corretamente
+scheduler = AsyncIOScheduler()  # Agora o scheduler é inicializado corretamente
 
 # Adicionando as tarefas no agendador
 scheduler.add_job(enviar_mensagem_programada, "cron", hour=10, minute=0, args=[app.bot])  # Alterar horário conforme necessidade
@@ -205,7 +205,7 @@ async def main():
     }
 
     # Agendador de tarefas
-    scheduler.start()
+    scheduler.start()  # Iniciando o scheduler
 
     # Chama a função para adicionar os canais ao banco de dados
     add_canais()
