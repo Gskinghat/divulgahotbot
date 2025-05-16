@@ -80,17 +80,10 @@ async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto = f"✅ Bot é administrador em {len(canais_verificados)} canais públicos."
     await update.message.reply_text(texto)
 
-# Função para verificar administradores automaticamente, com fake update e context
-async def verificar_admins_auto(bot):
-    from telegram import Update
-    from telegram.ext import ContextTypes
-
-    # Criando um fake de 'update' e 'context'
-    fake_update = Update(update_id=0, message=None)  # Usar um objeto de mensagem fake
-    fake_context = ContextTypes.DEFAULT_TYPE(bot=bot)
-
-    # Chamando a função de verificar admins
-    await verificar_admins(fake_update, fake_context)
+# Função para obter o chat_id
+async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat.id  # Obtém o chat_id do comando de start
+    await update.message.reply_text(f"Seu chat_id é: {chat_id}")
 
 # Função para enviar mensagem periodicamente
 async def enviar_mensagem_periodica(bot, horario):
