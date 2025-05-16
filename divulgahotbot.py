@@ -88,6 +88,25 @@ async def enviar_relatorio_diario(context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"Erro ao enviar relatório diário: {e}")
 
+# Função para enviar o relatório semanal
+async def enviar_relatorio_semanal(context: ContextTypes.DEFAULT_TYPE):
+    hoje = datetime.now().strftime("%d/%m/%Y")
+    total_views = get_views()
+    total_canais = len(get_canais())
+
+    texto = (
+        f"🏆 Relatório Semanal – {hoje}\n\n"
+        f"Total de visualizações nas listas esta semana: {total_views:,} 👀\n"
+        f"Total de canais participantes: {total_canais}\n\n"
+        "Mantenha-se firme para continuar aumentando sua visibilidade, que a semana promete! 💪🚀"
+    )
+
+    try:
+        await context.bot.send_message(chat_id=ADMIN_ID, text=texto)
+        update_views(0)  # Resetando o contador de visualizações
+    except Exception as e:
+        logger.error(f"Erro ao enviar relatório semanal: {e}")
+
 # Função para exibir os canais com botões clicáveis
 async def exibir_canais(update: Update, context: ContextTypes.DEFAULT_TYPE):
     canais = get_canais()  # Pega os canais cadastrados no banco de dados
@@ -107,33 +126,6 @@ async def exibir_canais(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Envia a mensagem com a lista de canais e botões clicáveis
     await update.message.reply_text("🔗 Lista de Canais Cadastrados:", reply_markup=keyboard)
-
-# Função para verificar se o bot é ADM do canal e enviar lista de canais
-async def verificar_adm_e_publicar(bot, chat_id):
-    try:
-        # Verifica se o bot é administrador do canal
-        member = await bot.get_chat_member(chat_id, bot.id)
-        if member.status == "administrator":
-            # Se for ADM, envia a lista de canais
-            canais = get_canais()
-            if not canais:
-                await bot.send_message(chat_id=chat_id, text="Nenhum canal cadastrado.")
-                return
-
-            # Criação da lista de botões
-            buttons = []
-            for canal in canais:
-                canal_id = canal[0]  # Canal ID armazenado no banco
-                canal_nome = f"Canal {canal_id}"  # Defina um nome ou recupere do banco
-                buttons.append([InlineKeyboardButton(canal_nome, url=f"https://t.me/{canal_id}")])
-
-            keyboard = InlineKeyboardMarkup(buttons)
-            # Envia a mensagem com a lista de canais
-            await bot.send_message(chat_id=chat_id, text="🔗 Lista de Canais Cadastrados:", reply_markup=keyboard)
-        else:
-            logger.warning(f"O bot não é administrador do canal {chat_id}. Não foi possível enviar a lista.")
-    except Exception as e:
-        logger.error(f"Erro ao verificar admin do canal {chat_id}: {e}")
 
 # Função de boas-vindas personalizada
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
