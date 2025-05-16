@@ -15,6 +15,7 @@ from telegram.ext import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
 import os
+import time
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
@@ -208,9 +209,8 @@ async def main():
         'pool_size': 20  # Pool de conexões de 20
     }
 
-    # Usando Polling ao invés de Webhook
+    # Polling sem Webhook
     await app.bot.delete_webhook(drop_pending_updates=True)
-    print("✅ Bot rodando com Polling e agendamento diário!")
 
     # Agendador de tarefas
     scheduler = AsyncIOScheduler()
@@ -231,6 +231,7 @@ async def main():
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
     app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.CHAT_MEMBER))
 
+    print("✅ Bot rodando com polling e agendamento diário!")
     await app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
