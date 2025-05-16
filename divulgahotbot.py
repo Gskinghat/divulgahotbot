@@ -208,11 +208,9 @@ async def main():
         'pool_size': 20  # Pool de conexões de 20
     }
 
-    # Configuração do webhook
-    webhook_url = "https://divulgahotbot-production.up.railway.app/webhook"
-    await app.bot.set_webhook(url=webhook_url)
-
+    # Usando Polling ao invés de Webhook
     await app.bot.delete_webhook(drop_pending_updates=True)
+    print("✅ Bot rodando com Polling e agendamento diário!")
 
     # Agendador de tarefas
     scheduler = AsyncIOScheduler()
@@ -233,12 +231,10 @@ async def main():
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex("visualizacao"), simular_view))
     app.add_handler(ChatMemberHandler(novo_admin, ChatMemberHandler.CHAT_MEMBER))
 
-    print("✅ Bot rodando com webhook e agendamento diário!")
-    await app.run_webhook(drop_pending_updates=True)
+    await app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     try:
-        asyncio.get_event_loop().run_until_complete(main())
+        asyncio.get_running_loop().create_task(main())
     except RuntimeError:
-        asyncio.run(main())  # Para garantir que o loop seja rodado corretamente
-
+        asyncio.run(main())
