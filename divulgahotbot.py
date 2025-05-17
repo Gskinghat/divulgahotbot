@@ -84,9 +84,8 @@ async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
-    print("Tentando enviar a mensagem...")  # Log para verificar se a função está sendo chamada
+    logger.info("Iniciando envio de mensagens programadas...")  # Log para iniciar a tarefa
 
-    # Cabeçalho da mensagem personalizada
     mensagem = (
         "💎: {𝗟 𝗜 𝗦 𝗧 𝗔 𝗛𝗢𝗧 🔞👑}\n\n"
         "A MELHOR lista quente do Telegram\n"
@@ -115,7 +114,6 @@ async def enviar_mensagem_programada(bot):
                 canal_link = f"https://t.me/{canal_id}"  # Usando o ID para canais privados
         except Exception as e:
             logger.error(f"Erro ao buscar o nome do canal {canal_id}: {e}")
-            logger.error(f"Detalhes do erro: {traceback.format_exc()}")  # Mostrando o traceback completo
             canal_nome = f"Canal {canal_id}"  # Caso haja erro, use o ID como fallback
             canal_link = f"https://t.me/{canal_id}"  # Fallback usando o ID interno
 
@@ -127,19 +125,21 @@ async def enviar_mensagem_programada(bot):
         try:
             # Envia a mensagem para o canal
             await bot.send_message(chat_id=canal_id, text=mensagem, reply_markup=InlineKeyboardMarkup(buttons), parse_mode="Markdown")
-            print(f"Mensagem enviada com sucesso para o canal {canal_id}")  # Log de sucesso
+            logger.info(f"Mensagem enviada com sucesso para o canal {canal_id}")  # Log de sucesso
         except Exception as e:
             logger.error(f"Erro ao enviar mensagem para o canal {canal_id}: {e}")
-            logger.error(f"Detalhes do erro: {traceback.format_exc()}")  # Log detalhado do erro
 
-    print("Mensagens enviadas para todos os canais!")  # Log para confirmar que a mensagem foi enviada para todos os canais
+    logger.info("Mensagens enviadas para todos os canais!")  # Log para confirmar que a mensagem foi enviada para todos os canais
 
 # Função para iniciar o bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("Comando /start recebido.")  # Log para verificar a execução
     await update.message.reply_text("Olá! Eu sou o bot e estou pronto para ajudar!")
 
 # Função principal do bot
 async def main():
+    logger.info("Iniciando o bot...")  # Log para verificar o início da execução
+
     # Configuração do bot com pool e timeout ajustados
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -165,7 +165,7 @@ async def main():
     except Exception as e:
         logger.error(f"Erro ao agendar tarefa: {e}")
 
-    print("✅ Bot rodando com polling e agendamento diário!")
+    logger.info("✅ Bot rodando com polling e agendamento diário!")
     await app.run_polling(drop_pending_updates=True)  # Apenas polling, sem webhook
 
 if __name__ == "__main__":
