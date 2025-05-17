@@ -2,7 +2,7 @@ import logging
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import sqlite3
 import os
 from dotenv import load_dotenv
@@ -58,7 +58,6 @@ def get_canais():
 
 # Função para verificar se o bot é administrador em todos os canais
 async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logger.info("Verificando canais onde o bot é administrador...")  # Log de depuração
     bot = context.bot
     canais_verificados = []
 
@@ -144,8 +143,11 @@ async def main():
     # Configuração do bot com pool e timeout ajustados
     app = Application.builder().token(BOT_TOKEN).build()
 
-    # Chama a função para criar a tabela 'canais' e 'views' se não existirem
+    # Chama a função para criar a tabela 'canais' se não existir
     create_tables()
+
+    # Chama a função para adicionar todos os canais novamente
+    # adicionar_varios_canais()  # Certifique-se de ter a função 'adicionar_varios_canais' configurada corretamente
 
     # Ajustando o pool de conexões e o timeout com a API pública
     app.bot._request_kwargs = {
@@ -153,11 +155,8 @@ async def main():
         'pool_size': 20  # Pool de conexões de 20
     }
 
-    # Adicionando o comando de verificação de admin
-    app.add_handler(CommandHandler("verificar_admins", verificar_admins))
-
-    # Adicionando o comando /start
-    app.add_handler(CommandHandler("start", start))  # Comando start agora registrado
+    # **Teste manual**
+    await enviar_mensagem_programada(app.bot)  # Isso vai enviar agora a mensagem para todos os canais cadastrados
 
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
