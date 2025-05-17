@@ -58,6 +58,7 @@ def get_canais():
 
 # Função para verificar se o bot é administrador em todos os canais
 async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("Verificando canais onde o bot é administrador...")  # Log de depuração
     bot = context.bot
     canais_verificados = []
 
@@ -141,7 +142,7 @@ async def main():
     logger.info("Iniciando o bot...")  # Log para verificar o início da execução
 
     # Configuração do bot com pool e timeout ajustados
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app = Application.builder().token(BOT_TOKEN).build()
 
     # Chama a função para criar a tabela 'canais' e 'views' se não existirem
     create_tables()
@@ -154,6 +155,9 @@ async def main():
 
     # Adicionando o comando de verificação de admin
     app.add_handler(CommandHandler("verificar_admins", verificar_admins))
+
+    # Adicionando o comando /start
+    app.add_handler(CommandHandler("start", start))  # Comando start agora registrado
 
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
