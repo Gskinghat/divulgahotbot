@@ -1,6 +1,7 @@
 import pytz
 import traceback
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
 # Definir o fuso horário de Brasília (GMT-3)
 brasilia_tz = pytz.timezone('America/Sao_Paulo')
@@ -16,7 +17,6 @@ async def enviar_mensagem_programada(bot):
         "👇Veja todos os canais disponíveis👇\n\n"
     )
 
-    # Obtendo todos os canais cadastrados
     canais = get_canais()  # Pegando a lista de canais
     buttons = []  # Lista para armazenar os botões
 
@@ -43,11 +43,7 @@ async def enviar_mensagem_programada(bot):
             canal_nome = f"Canal {canal_id}"  # Caso haja erro, use o ID como fallback
             canal_link = f"https://t.me/{canal_id}"  # Fallback usando o ID interno
 
-        # Adicionando o botão para cada canal, agora com o nome real e link correto
         buttons.append([InlineKeyboardButton(canal_nome, url=canal_link)])
-
-    if not buttons:
-        logger.warning("Nenhum botão foi criado, verifique se os canais estão sendo processados corretamente.")
 
     # Enviando a mensagem para todos os canais cadastrados
     for canal in canais:
