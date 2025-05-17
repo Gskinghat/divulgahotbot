@@ -54,6 +54,32 @@ def get_canais():
     conn.close()
     return canais
 
+# Função para verificar se o bot é administrador em todos os canais
+async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    bot = context.bot
+    canais_verificados = []
+
+    # Recupera todos os canais do banco de dados
+    canais = get_canais()  
+
+    # Verifica se o bot é administrador em cada canal
+    for canal in canais:
+        canal_id = canal[0]
+        try:
+            # Verifica o status do bot no canal
+            membro = await bot.get_chat_member(canal_id, bot.id)
+            if membro.status in ["administrator", "creator"]:
+                canais_verificados.append(canal_id)
+        except Exception as e:
+            logger.error(f"Erro ao verificar o status do bot no canal {canal_id}: {e}")
+
+    # Envia mensagem para o admin com os canais onde o bot é administrador
+    if canais_verificados:
+        canais_listados = "\n".join([f"Canal: {canal_id}" for canal_id in canais_verificados])
+        await update.message.reply_text(f"✅ O bot é administrador em os seguintes canais:\n{canais_listados}")
+    else:
+        await update.message.reply_text("❌ O bot não é administrador em nenhum dos canais registrados.")
+
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
     print("Tentando enviar a mensagem...")  # Log para verificar se a função está sendo chamada
@@ -106,30 +132,6 @@ async def enviar_mensagem_programada(bot):
 
     print("Mensagens enviadas para todos os canais!")  # Log para confirmar que a mensagem foi enviada para todos os canais
 
-# Função para calcular visualizações e enviar relatório
-async def simular_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    bot = context.bot
-    total_visualizacoes = 0
-    relatorio = "📊 Relatório de Visualizações dos Canais:\n\n"
-
-    canais = get_canais()  # Pegando a lista de canais
-    if not canais:
-        await bot.send_message(chat_id=ADMIN_ID, text="Nenhum canal registrado para visualizar.")
-        return
-
-    for canal in canais:
-        canal_id = canal[0]
-        try:
-            # Simulando o cálculo de visualizações (isso pode ser um número fixo ou calculado de alguma maneira)
-            visualizacoes = 100  # Aqui você pode implementar o cálculo real
-            total_visualizacoes += visualizacoes
-            relatorio += f"Canal {canal_id}: {visualizacoes} visualizações\n"
-        except Exception as e:
-            logger.error(f"Erro ao calcular visualizações para {canal[0]}: {e}")
-
-    relatorio += f"\nTotal de Visualizações: {total_visualizacoes}"
-    await bot.send_message(chat_id=ADMIN_ID, text=relatorio)
-
 # Função para iniciar o bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Olá! Eu sou o bot e estou pronto para ajudar!")
@@ -145,14 +147,14 @@ async def main():
     # Chama a função para criar a tabela 'canais' e 'views' se não existirem
     create_tables()
 
-    # Chama a função para adicionar todos os canais novamente
-    adicionar_varios_canais()
-
     # Ajustando o pool de conexões e o timeout com a API pública
     app.bot._request_kwargs = {
         'timeout': 30,  # Timeout de 30 segundos
         'pool_size': 20  # Pool de conexões de 20
     }
+
+    # Adicionando o comando de verificação de admin
+    app.add_handler(CommandHandler("verificar_admins", verificar_admins))
 
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
