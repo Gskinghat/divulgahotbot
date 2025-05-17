@@ -183,15 +183,26 @@ async def enviar_mensagem_programada(bot):
 
     logger.info("Mensagens enviadas para todos os canais!")  # Log para confirmar que a mensagem foi enviada para todos os canais
 
-# Função principal do bot
+# Função para iniciar o bot
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("Comando /start recebido.")  # Log para verificar a execução
+    await update.message.reply_text("Olá! Eu sou o bot e estou pronto para ajudar!")
+
+# Inicializando o agendador corretamente
+scheduler = AsyncIOScheduler()  # Agora o scheduler é inicializado corretamente
+
+# Main
 async def main():
     logger.info("Iniciando o bot...")  # Log para verificar o início da execução
 
     # Configuração do bot com pool e timeout ajustados
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # Chama a função para criar a tabela 'canais' se não existir
     create_tables()
+
+    # Chama a função para adicionar todos os canais novamente
+    # adicionar_varios_canais()  # Certifique-se de ter a função 'adicionar_varios_canais' configurada corretamente
 
     # Ajustando o pool de conexões e o timeout com a API pública
     app.bot._request_kwargs = {
