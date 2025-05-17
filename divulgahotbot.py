@@ -1,10 +1,11 @@
 import asyncio  # Importando asyncio
 import logging  # Importando logging
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import pytz
-import traceback
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # Importando AsyncIOScheduler
+import pytz  # Para fuso horário
+import traceback  # Para rastrear erros e depuração
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+import sqlite3
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
@@ -12,6 +13,33 @@ logger = logging.getLogger(__name__)
 
 # Definir o fuso horário de Brasília (GMT-3)
 brasilia_tz = pytz.timezone('America/Sao_Paulo')
+
+# Função para criar as tabelas caso não existam
+def create_tables():
+    conn = sqlite3.connect('bot_data.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS canais (
+        chat_id INTEGER PRIMARY KEY
+    )
+    ''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS views (
+        rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+        total_views INTEGER
+    )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Função para obter os canais do banco de dados
+def get_canais():
+    conn = sqlite3.connect('bot_data.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM canais")
+    canais = cursor.fetchall()
+    conn.close()
+    return canais
 
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
