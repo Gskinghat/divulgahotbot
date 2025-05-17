@@ -136,7 +136,7 @@ async def add_canal_comando(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
-    logger.info("Iniciando envio de mensagens programadas...")  # Log para iniciar a tarefa
+    logger.info("Tentando enviar a mensagem...")  # Log para verificar se a função está sendo chamada
 
     mensagem = (
         "💎: {𝗟 𝗜 𝗦 𝗧 𝗔 𝗛𝗢𝗧 🔞👑}\n\n"
