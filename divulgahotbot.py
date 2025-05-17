@@ -1,11 +1,15 @@
 import logging
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import pytz
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 import sqlite3
 import os
 from dotenv import load_dotenv
+import warnings
+
+# Ignorar o RuntimeWarning
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 # Carregar as variáveis de ambiente do .env
 load_dotenv()
