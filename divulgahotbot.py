@@ -1,9 +1,14 @@
-from apscheduler.schedulers.asyncio import AsyncIOScheduler  # Corrigido
-
+import asyncio  # Importando asyncio
+import logging  # Importando logging
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import pytz
 import traceback
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+
+# Configuração do logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Definir o fuso horário de Brasília (GMT-3)
 brasilia_tz = pytz.timezone('America/Sao_Paulo')
