@@ -213,6 +213,9 @@ async def main():
     # Adicionando o comando /start
     app.add_handler(CommandHandler("start", start))  # Comando start agora registrado
 
+    # Desativa qualquer webhook existente
+    await app.bot.delete_webhook()
+
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=18, minute=0, args=[app.bot], timezone=brasilia_tz)  # 18h
