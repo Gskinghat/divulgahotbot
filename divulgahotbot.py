@@ -1,12 +1,10 @@
-import asyncio  # Importando asyncio
-import logging  # Importando logging
-from apscheduler.schedulers.asyncio import AsyncIOScheduler  # Importando AsyncIOScheduler
-import pytz  # Para fuso horário
-import traceback  # Para rastrear erros e depuração
+import logging
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import pytz
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
-import os
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 import sqlite3
+import os
 from dotenv import load_dotenv
 
 # Carregar as variáveis de ambiente do .env
@@ -60,7 +58,7 @@ async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     canais_verificados = []
 
     # Recupera todos os canais do banco de dados
-    canais = get_canais()  
+    canais = get_canais()
 
     # Verifica se o bot é administrador em cada canal
     for canal in canais:
@@ -76,7 +74,7 @@ async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Envia mensagem para o admin com os canais onde o bot é administrador
     if canais_verificados:
         canais_listados = "\n".join([f"Canal: {canal_id}" for canal_id in canais_verificados])
-        await update.message.reply_text(f"✅ O bot é administrador em os seguintes canais:\n{canais_listados}")
+        await update.message.reply_text(f"✅ O bot é administrador nos seguintes canais:\n{canais_listados}")
     else:
         await update.message.reply_text("❌ O bot não é administrador em nenhum dos canais registrados.")
 
@@ -136,10 +134,7 @@ async def enviar_mensagem_programada(bot):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Olá! Eu sou o bot e estou pronto para ajudar!")
 
-# Inicializando o agendador corretamente
-scheduler = AsyncIOScheduler()  # Agora o scheduler é inicializado corretamente
-
-# Main
+# Função principal do bot
 async def main():
     # Configuração do bot com pool e timeout ajustados
     app = ApplicationBuilder().token(BOT_TOKEN).build()
