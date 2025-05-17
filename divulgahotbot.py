@@ -5,11 +5,24 @@ import pytz  # Para fuso horário
 import traceback  # Para rastrear erros e depuração
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+import os
 import sqlite3
+from dotenv import load_dotenv
+
+# Carregar as variáveis de ambiente do .env
+load_dotenv()
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Carregar as variáveis do arquivo .env
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = os.getenv("ADMIN_ID")
+
+if not BOT_TOKEN or not ADMIN_ID:
+    logger.error("BOT_TOKEN ou ADMIN_ID não definidos no .env ou no painel do Railway!")
+    exit(1)
 
 # Definir o fuso horário de Brasília (GMT-3)
 brasilia_tz = pytz.timezone('America/Sao_Paulo')
