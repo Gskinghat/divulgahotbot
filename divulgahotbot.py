@@ -14,8 +14,8 @@ from telegram.ext import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
 import os
-from dotenv import load_dotenv
 import pytz
+from dotenv import load_dotenv
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
@@ -182,6 +182,14 @@ async def enviar_mensagem_programada(bot):
 
     logger.info("Mensagens enviadas para todos os canais!")  # Log para confirmar que a mensagem foi enviada para todos os canais
 
+# Função para testar o envio de mensagem
+async def testar_envio(bot):
+    try:
+        await bot.send_message(chat_id=ADMIN_ID, text="Testando a mensagem programada!")
+        logger.info("Mensagem de teste enviada com sucesso!")
+    except Exception as e:
+        logger.error(f"Erro ao enviar mensagem de teste: {e}")
+
 # Função para iniciar o bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("Comando /start recebido.")  # Log para verificar a execução
@@ -200,17 +208,8 @@ async def main():
     # Chama a função para criar a tabela 'canais' se não existir
     create_tables()
 
-    # Ajustando o pool de conexões e o timeout com a API pública
-    app.bot._request_kwargs = {
-        'timeout': 30,  # Timeout de 30 segundos
-        'pool_size': 20  # Pool de conexões de 20
-    }
-
-    # Adicionando o comando de verificação de admin
-    app.add_handler(CommandHandler("verificar_admins", verificar_admins))
-
     # Adicionando o comando /start
-    app.add_handler(CommandHandler("start", start))  # Comando start agora registrado
+    app.add_handler(CommandHandler("start", start))
 
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
@@ -221,6 +220,9 @@ async def main():
         scheduler.start()  # Iniciando o scheduler
     except Exception as e:
         logger.error(f"Erro ao agendar tarefa: {e}")
+
+    # Testando o envio de mensagem
+    await testar_envio(app.bot)
 
     logger.info("✅ Bot rodando com polling e agendamento diário!")
     await app.run_polling(drop_pending_updates=True)  # Apenas polling, sem webhook
