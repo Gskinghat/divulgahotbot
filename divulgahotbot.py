@@ -10,11 +10,11 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     filters,
+    Updater,
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
 import os
-from shutil import copy
 import pytz
 from dotenv import load_dotenv
 
@@ -88,10 +88,6 @@ def get_canais():
     cursor.execute("SELECT * FROM canais")
     canais = cursor.fetchall()
     close_db_connection(conn)
-    if canais:
-        logger.info(f"Encontrados {len(canais)} canais.")
-    else:
-        logger.warning("Nenhum canal encontrado na base de dados.")
     return canais
 
 # === FUNÇÕES ===
