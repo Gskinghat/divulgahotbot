@@ -182,14 +182,6 @@ async def enviar_mensagem_programada(bot):
 
     logger.info("Mensagens enviadas para todos os canais!")  # Log para confirmar que a mensagem foi enviada para todos os canais
 
-# Função para testar o envio de mensagem
-async def testar_envio(bot):
-    try:
-        await bot.send_message(chat_id=ADMIN_ID, text="Testando a mensagem programada!")
-        logger.info("Mensagem de teste enviada com sucesso!")
-    except Exception as e:
-        logger.error(f"Erro ao enviar mensagem de teste: {e}")
-
 # Função para iniciar o bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("Comando /start recebido.")  # Log para verificar a execução
@@ -208,21 +200,27 @@ async def main():
     # Chama a função para criar a tabela 'canais' se não existir
     create_tables()
 
+    # Ajustando o pool de conexões e o timeout com a API pública
+    app.bot._request_kwargs = {
+        'timeout': 30,  # Timeout de 30 segundos
+        'pool_size': 20  # Pool de conexões de 20
+    }
+
+    # Adicionando o comando de verificação de admin
+    app.add_handler(CommandHandler("verificar_admins", verificar_admins))
+
     # Adicionando o comando /start
-    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("start", start))  # Comando start agora registrado
 
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=18, minute=0, args=[app.bot], timezone=brasilia_tz)  # 18h
-        scheduler.add_job(enviar_mensagem_programada, "cron", hour=22, minute=0, args=[app.bot], timezone=brasilia_tz)  # 22h
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=20, minute=33, args=[app.bot], timezone=brasilia_tz)  # Alterado para 20:33h
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=4, minute=0, args=[app.bot], timezone=brasilia_tz)   # 4h
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=11, minute=0, args=[app.bot], timezone=brasilia_tz)  # 11h
         scheduler.start()  # Iniciando o scheduler
     except Exception as e:
         logger.error(f"Erro ao agendar tarefa: {e}")
-
-    # Testando o envio de mensagem
-    await testar_envio(app.bot)
 
     logger.info("✅ Bot rodando com polling e agendamento diário!")
     await app.run_polling(drop_pending_updates=True)  # Apenas polling, sem webhook
