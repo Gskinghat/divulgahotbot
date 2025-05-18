@@ -119,6 +119,30 @@ async def add_canal_comando(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except ValueError:
         await update.message.reply_text("O ID do canal deve ser um número válido.")
 
+# Função para agendar mensagens, restrito ao criador
+async def agendar_mensagem_comando(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != ADMIN_ID:
+        await update.message.reply_text("Você não tem permissão para agendar mensagens.")
+        return
+
+    # Verificar se a hora e minuto foram fornecidos
+    if len(context.args) != 2:
+        await update.message.reply_text("Por favor, forneça a hora e o minuto para o agendamento (exemplo: /agendar_mensagem 18 30).")
+        return
+
+    try:
+        hora = int(context.args[0])
+        minuto = int(context.args[1])
+
+        # Agendar a mensagem para o horário especificado
+        scheduler.add_job(enviar_mensagem_programada, 'cron', hour=hora, minute=minuto, args=[update.bot], timezone=brasilia_tz)
+        await update.message.reply_text(f"Mensagem agendada para {hora}:{minuto} (horário de Brasília).")
+    except ValueError:
+        await update.message.reply_text("Hora e minuto devem ser números válidos.")
+    except Exception as e:
+        logger.error(f"Erro ao agendar mensagem: {e}")
+        await update.message.reply_text(f"Erro ao agendar mensagem: {e}")
+
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
     logger.info("Iniciando envio de mensagens programadas...")  # Log para iniciar a tarefa
