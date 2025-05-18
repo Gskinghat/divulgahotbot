@@ -1,13 +1,14 @@
 import asyncio
 import logging
 import sqlite3
+from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     ApplicationBuilder,
+    ContextTypes,
     CommandHandler,
     MessageHandler,
-    ContextTypes,
     filters,
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -74,8 +75,54 @@ def get_canais():
     close_db_connection(conn)
     return canais
 
+# === FUNÇÕES ===
+
+# Função para verificar os canais onde o bot é administrador
+async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    bot = context.bot
+    canais_verificados = []
+
+    for canal in get_canais():  # Lista dos canais cadastrados
+        try:
+            membro = await bot.get_chat_member(canal[0], bot.id)
+            if membro.status in ["administrator", "creator"]:
+                canais_verificados.append(canal[0])
+        except Exception as e:
+            logger.error(f"Erro ao verificar {canal[0]}: {e}")
+
+    texto = f"✅ Bot é administrador em {len(canais_verificados)} canais públicos."
+    await update.message.reply_text(texto)
+
+# Função para obter o chat_id
+async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat.id  # Obtém o chat_id do comando de start
+    await update.message.reply_text(f"Seu chat_id é: {chat_id}")
+
+# Função para adicionar canais via comando
+async def add_canal_comando(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Verificar se o comando foi enviado por um admin
+    if update.message.from_user.id != ADMIN_ID:
+        await update.message.reply_text("Você não tem permissão para adicionar canais.")
+        return
+
+    # Verificar se foi fornecido um ID de canal
+    if not context.args:
+        await update.message.reply_text("Por favor, forneça o ID do canal para adicionar.")
+        return
+
+    canal_id = context.args[0]  # O ID do canal será o primeiro argumento
+
+    try:
+        canal_id = int(canal_id)  # Certificar-se de que o ID é um número inteiro
+        add_canal(canal_id)
+        await update.message.reply_text(f"Canal {canal_id} adicionado com sucesso!")
+    except ValueError:
+        await update.message.reply_text("O ID do canal deve ser um número válido.")
+
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
+    logger.info("Iniciando envio de mensagens programadas...")  # Log para iniciar a tarefa
+
     mensagem = (
         "💎: {𝗟 𝗜 𝗦 𝗧 𝗔 𝗛𝗢𝗧 🔞👑}\n\n"
         "A MELHOR lista quente do Telegram\n"
