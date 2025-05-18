@@ -60,21 +60,6 @@ def create_tables():
     close_db_connection(conn)
 
 # Funções de persistência
-def get_views():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT total_views FROM views WHERE rowid = 1")
-    result = cursor.fetchone()
-    close_db_connection(conn)
-    return result[0] if result else 0
-
-def update_views(new_views):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE views SET total_views = ? WHERE rowid = 1", (new_views,))
-    conn.commit()
-    close_db_connection(conn)
-
 def add_canal(chat_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -112,6 +97,27 @@ async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat.id  # Obtém o chat_id do comando de start
     await update.message.reply_text(f"Seu chat_id é: {chat_id}")
+
+# Função para adicionar canais via comando
+async def add_canal_comando(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Verificar se o comando foi enviado por um admin
+    if update.message.from_user.id != ADMIN_ID:
+        await update.message.reply_text("Você não tem permissão para adicionar canais.")
+        return
+
+    # Verificar se foi fornecido um ID de canal
+    if not context.args:
+        await update.message.reply_text("Por favor, forneça o ID do canal para adicionar.")
+        return
+
+    canal_id = context.args[0]  # O ID do canal será o primeiro argumento
+
+    try:
+        canal_id = int(canal_id)  # Certificar-se de que o ID é um número inteiro
+        add_canal(canal_id)
+        await update.message.reply_text(f"Canal {canal_id} adicionado com sucesso!")
+    except ValueError:
+        await update.message.reply_text("O ID do canal deve ser um número válido.")
 
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
@@ -180,9 +186,6 @@ async def main():
     # Chama a função para criar a tabela 'canais' se não existir
     create_tables()
 
-    # Chama a função para adicionar todos os canais novamente
-    # adicionar_varios_canais()  # Certifique-se de ter a função 'adicionar_varios_canais' configurada corretamente
-
     # Ajustando o pool de conexões e o timeout com a API pública
     app.bot._request_kwargs = {
         'timeout': 30,  # Timeout de 30 segundos
@@ -194,6 +197,9 @@ async def main():
 
     # Adicionando o comando /start
     app.add_handler(CommandHandler("start", start))  # Comando start agora registrado
+
+    # Adicionando o comando de agendamento de mensagem, restrito ao criador
+    app.add_handler(CommandHandler("agendar_mensagem", agendar_mensagem_comando))
 
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
