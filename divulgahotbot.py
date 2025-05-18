@@ -199,6 +199,11 @@ async def agendar_mensagem_comando(update: Update, context: ContextTypes.DEFAULT
 # Inicializando o agendador corretamente
 scheduler = AsyncIOScheduler()  # Agora o scheduler é inicializado corretamente
 
+# Função start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("Comando /start recebido.")  # Log para verificar a execução
+    await update.message.reply_text("Olá! Eu sou o bot e estou pronto para ajudar!")
+
 # Main
 async def main():
     logger.info("Iniciando o bot...")  # Log para verificar o início da execução
