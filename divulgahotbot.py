@@ -1,22 +1,20 @@
 import asyncio
 import logging
 import sqlite3
-from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     ApplicationBuilder,
-    ContextTypes,
     CommandHandler,
     MessageHandler,
+    ContextTypes,
     filters,
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
 import os
-from shutil import copy
-import pytz
 from dotenv import load_dotenv
+import pytz
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
@@ -59,22 +57,7 @@ def create_tables():
     conn.commit()
     close_db_connection(conn)
 
-# Funções de persistência
-def get_views():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT total_views FROM views WHERE rowid = 1")
-    result = cursor.fetchone()
-    close_db_connection(conn)
-    return result[0] if result else 0
-
-def update_views(new_views):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE views SET total_views = ? WHERE rowid = 1", (new_views,))
-    conn.commit()
-    close_db_connection(conn)
-
+# Função para adicionar canais via comando
 def add_canal(chat_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -82,6 +65,7 @@ def add_canal(chat_id):
     conn.commit()
     close_db_connection(conn)
 
+# Função para pegar todos os canais
 def get_canais():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -90,54 +74,8 @@ def get_canais():
     close_db_connection(conn)
     return canais
 
-# === FUNÇÕES ===
-
-# Função para verificar os canais onde o bot é administrador
-async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    bot = context.bot
-    canais_verificados = []
-
-    for canal in get_canais():  # Lista dos canais cadastrados
-        try:
-            membro = await bot.get_chat_member(canal[0], bot.id)
-            if membro.status in ["administrator", "creator"]:
-                canais_verificados.append(canal[0])
-        except Exception as e:
-            logger.error(f"Erro ao verificar {canal[0]}: {e}")
-
-    texto = f"✅ Bot é administrador em {len(canais_verificados)} canais públicos."
-    await update.message.reply_text(texto)
-
-# Função para obter o chat_id
-async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.message.chat.id  # Obtém o chat_id do comando de start
-    await update.message.reply_text(f"Seu chat_id é: {chat_id}")
-
-# Função para adicionar canais via comando
-async def add_canal_comando(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Verificar se o comando foi enviado por um admin
-    if update.message.from_user.id != ADMIN_ID:
-        await update.message.reply_text("Você não tem permissão para adicionar canais.")
-        return
-
-    # Verificar se foi fornecido um ID de canal
-    if not context.args:
-        await update.message.reply_text("Por favor, forneça o ID do canal para adicionar.")
-        return
-
-    canal_id = context.args[0]  # O ID do canal será o primeiro argumento
-
-    try:
-        canal_id = int(canal_id)  # Certificar-se de que o ID é um número inteiro
-        add_canal(canal_id)
-        await update.message.reply_text(f"Canal {canal_id} adicionado com sucesso!")
-    except ValueError:
-        await update.message.reply_text("O ID do canal deve ser um número válido.")
-
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
-    logger.info("Tentando enviar a mensagem...")  # Log para verificar se a função está sendo chamada
-
     mensagem = (
         "💎: {𝗟 𝗜 𝗦 𝗧 𝗔 𝗛𝗢𝗧 🔞👑}\n\n"
         "A MELHOR lista quente do Telegram\n"
@@ -181,15 +119,13 @@ async def enviar_mensagem_programada(bot):
         except Exception as e:
             logger.error(f"Erro ao enviar mensagem para o canal {canal_id}: {e}")
 
-    logger.info("Mensagens enviadas para todos os canais!")  # Log para confirmar que a mensagem foi enviada para todos os canais
-
 # Função para iniciar o bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("Comando /start recebido.")  # Log para verificar a execução
     await update.message.reply_text("Olá! Eu sou o bot e estou pronto para ajudar!")
 
 # Inicializando o agendador corretamente
-scheduler = AsyncIOScheduler()  # Agora o scheduler é inicializado corretamente
+scheduler = AsyncIOScheduler()
 
 # Main
 async def main():
@@ -213,8 +149,8 @@ async def main():
     # Adicionando o comando /start
     app.add_handler(CommandHandler("start", start))  # Comando start agora registrado
 
-    # Desativa qualquer webhook existente
-    await app.bot.delete_webhook()
+    # Adicionando o comando para gerar relatório de visualizações
+    app.add_handler(CommandHandler("relatorio_views", gerar_relatorio_views))
 
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
