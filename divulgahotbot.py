@@ -29,10 +29,10 @@ nest_asyncio.apply()
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = 6835008287  # ID do Criador do Bot
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
-if not BOT_TOKEN:
-    logger.error("BOT_TOKEN não definido nas variáveis de ambiente!")
+if not BOT_TOKEN or not ADMIN_ID:
+    logger.error("BOT_TOKEN e/ou ADMIN_ID não definidos nas variáveis de ambiente!")
     exit(1)
 
 # Definir o fuso horário de Brasília (GMT-3)
@@ -113,27 +113,6 @@ async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat.id  # Obtém o chat_id do comando de start
     await update.message.reply_text(f"Seu chat_id é: {chat_id}")
 
-# Função para adicionar canais via comando
-async def add_canal_comando(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Verificar se o comando foi enviado pelo criador do bot
-    if update.message.from_user.id != ADMIN_ID:
-        await update.message.reply_text("Você não tem permissão para adicionar canais.")
-        return
-
-    # Verificar se foi fornecido um ID de canal
-    if not context.args:
-        await update.message.reply_text("Por favor, forneça o ID do canal para adicionar.")
-        return
-
-    canal_id = context.args[0]  # O ID do canal será o primeiro argumento
-
-    try:
-        canal_id = int(canal_id)  # Certificar-se de que o ID é um número inteiro
-        add_canal(canal_id)
-        await update.message.reply_text(f"Canal {canal_id} adicionado com sucesso!")
-    except ValueError:
-        await update.message.reply_text("O ID do canal deve ser um número válido.")
-
 # Função para enviar a mensagem personalizada com a lista de canais
 async def enviar_mensagem_programada(bot):
     logger.info("Iniciando envio de mensagens programadas...")  # Log para iniciar a tarefa
@@ -183,32 +162,6 @@ async def enviar_mensagem_programada(bot):
 
     logger.info("Mensagens enviadas para todos os canais!")  # Log para confirmar que a mensagem foi enviada para todos os canais
 
-# Função para agendar mensagens (apenas para o criador do bot)
-async def agendar_mensagem(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Verificar se o comando foi enviado pelo criador do bot
-    if update.message.from_user.id != ADMIN_ID:
-        await update.message.reply_text("Você não tem permissão para agendar mensagens.")
-        return
-
-    # Verificar se foi fornecido um ID de canal e mensagem
-    if len(context.args) < 2:
-        await update.message.reply_text("Por favor, forneça o ID do canal e a mensagem.")
-        return
-
-    canal_id = int(context.args[0])  # O ID do canal será o primeiro argumento
-    mensagem = " ".join(context.args[1:])  # O restante será a mensagem
-
-    # Definir a data e hora para agendamento
-    horario = datetime.now(brasilia_tz)
-    
-    # Agendar a mensagem
-    add_agendamento(canal_id, mensagem, horario)
-
-    # Agendar no APScheduler
-    scheduler.add_job(enviar_mensagem_no_agendamento, 'date', run_date=horario, args=[canal_id, mensagem])
-
-    await update.message.reply_text(f"Mensagem agendada para o canal {canal_id}.")
-
 # Função para iniciar o bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("Comando /start recebido.")  # Log para verificar a execução
@@ -227,19 +180,20 @@ async def main():
     # Chama a função para criar a tabela 'canais' se não existir
     create_tables()
 
+    # Chama a função para adicionar todos os canais novamente
+    # adicionar_varios_canais()  # Certifique-se de ter a função 'adicionar_varios_canais' configurada corretamente
+
     # Ajustando o pool de conexões e o timeout com a API pública
     app.bot._request_kwargs = {
         'timeout': 30,  # Timeout de 30 segundos
         'pool_size': 20  # Pool de conexões de 20
     }
 
-    # Adicionando os comandos ao bot
-    app.add_handler(CommandHandler("verificar_admins", verificar_admins))
-    app.add_handler(CommandHandler("start", start))  # Comando start agora registrado
-    app.add_handler(CommandHandler("agendar", agendar_mensagem))  # Comando de agendamento
-
     # Adicionando o comando de verificação de admin
-    app.add_handler(CommandHandler("get_chat_id", get_chat_id))
+    app.add_handler(CommandHandler("verificar_admins", verificar_admins))
+
+    # Adicionando o comando /start
+    app.add_handler(CommandHandler("start", start))  # Comando start agora registrado
 
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
