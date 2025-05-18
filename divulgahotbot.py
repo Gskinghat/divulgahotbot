@@ -14,7 +14,6 @@ from telegram.ext import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
 import os
-from shutil import copy
 import pytz
 from dotenv import load_dotenv
 
@@ -148,7 +147,7 @@ async def enviar_mensagem_programada(bot):
     buttons = []  # Lista para armazenar os botões
 
     if not canais:
-        logger.warning("Nenhum canal encontrado na base de dados!")  # Log de alerta se nenhum canal for encontrado
+        logger.warning("Nenhum canal encontrado na base de dados!")  # Log de alerta se não houver canais
         return
 
     for canal in canais:
@@ -175,7 +174,6 @@ async def enviar_mensagem_programada(bot):
     for canal in canais:
         canal_id = canal[0]
         try:
-            # Envia a mensagem para o canal
             await bot.send_message(chat_id=canal_id, text=mensagem, reply_markup=InlineKeyboardMarkup(buttons), parse_mode="Markdown")
             logger.info(f"Mensagem enviada com sucesso para o canal {canal_id}")  # Log de sucesso
         except Exception as e:
