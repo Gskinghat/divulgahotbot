@@ -3,12 +3,20 @@ import logging
 import sqlite3
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
+from telegram.ext import (
+    Application,
+    ApplicationBuilder,
+    ContextTypes,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
 import os
-from dotenv import load_dotenv
+from shutil import copy
 import pytz
+from dotenv import load_dotenv
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
@@ -80,6 +88,10 @@ def get_canais():
     cursor.execute("SELECT * FROM canais")
     canais = cursor.fetchall()
     close_db_connection(conn)
+    if canais:
+        logger.info(f"Encontrados {len(canais)} canais.")
+    else:
+        logger.warning("Nenhum canal encontrado na base de dados.")
     return canais
 
 # === FUNÇÕES ===
@@ -149,60 +161,39 @@ async def enviar_mensagem_programada(bot):
         try:
             # Buscando o nome real do canal
             chat = await bot.get_chat(canal_id)
-            canal_nome = chat.title
+            canal_nome = chat.title  # Agora o nome do canal será extraído corretamente
 
+            # Verificando se o canal tem um nome de usuário (isso indica que o canal é público)
             if chat.username:
-                canal_link = f"https://t.me/{chat.username}"  
+                canal_link = f"https://t.me/{chat.username}"  # Usando o nome de usuário para canais públicos
             else:
-                canal_link = f"https://t.me/{canal_id}" 
-
-            buttons.append([InlineKeyboardButton(canal_nome, url=canal_link)])
-
+                canal_link = f"https://t.me/{canal_id}"  # Usando o ID para canais privados
         except Exception as e:
             logger.error(f"Erro ao buscar o nome do canal {canal_id}: {e}")
-            canal_nome = f"Canal {canal_id}"
-            canal_link = f"https://t.me/{canal_id}"
-            buttons.append([InlineKeyboardButton(canal_nome, url=canal_link)])
+            canal_nome = f"Canal {canal_id}"  # Caso haja erro, use o ID como fallback
+            canal_link = f"https://t.me/{canal_id}"  # Fallback usando o ID interno
 
-    # Enviar mensagem
+        buttons.append([InlineKeyboardButton(canal_nome, url=canal_link)])
+
+    # Enviando a mensagem para todos os canais cadastrados
     for canal in canais:
         canal_id = canal[0]
         try:
+            # Envia a mensagem para o canal
             await bot.send_message(chat_id=canal_id, text=mensagem, reply_markup=InlineKeyboardMarkup(buttons), parse_mode="Markdown")
-            logger.info(f"Mensagem enviada com sucesso para o canal {canal_id}")
+            logger.info(f"Mensagem enviada com sucesso para o canal {canal_id}")  # Log de sucesso
         except Exception as e:
             logger.error(f"Erro ao enviar mensagem para o canal {canal_id}: {e}")
-    
-    logger.info("Mensagens enviadas para todos os canais!")  # Log para confirmar que a mensagem foi enviada
 
-# Função para agendar mensagens
-async def agendar_mensagem_comando(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id != ADMIN_ID:
-        await update.message.reply_text("Você não tem permissão para agendar mensagens.")
-        return
+    logger.info("Mensagens enviadas para todos os canais!")  # Log para confirmar que a mensagem foi enviada para todos os canais
 
-    # Esperando que o usuário forneça hora e minuto
-    if len(context.args) != 2:
-        await update.message.reply_text("Por favor, forneça a hora e o minuto para o agendamento. Exemplo: /agendar 18 30")
-        return
-
-    try:
-        hora = int(context.args[0])
-        minuto = int(context.args[1])
-
-        # Agendando a tarefa
-        scheduler.add_job(enviar_mensagem_programada, "cron", hour=hora, minute=minuto, args=[context.bot], timezone=brasilia_tz)
-        await update.message.reply_text(f"Mensagem agendada para {hora:02d}:{minuto:02d}!")
-    except ValueError:
-        await update.message.reply_text("A hora e o minuto devem ser números válidos!")
-
-# Inicializando o agendador corretamente
-scheduler = AsyncIOScheduler()  # Agora o scheduler é inicializado corretamente
-
-# Função start
+# Função para iniciar o bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("Comando /start recebido.")  # Log para verificar a execução
     await update.message.reply_text("Olá! Eu sou o bot e estou pronto para ajudar!")
+
+# Inicializando o agendador corretamente
+scheduler = AsyncIOScheduler()  # Agora o scheduler é inicializado corretamente
 
 # Main
 async def main():
@@ -220,10 +211,11 @@ async def main():
         'pool_size': 20  # Pool de conexões de 20
     }
 
-    # Adicionando os handlers de comandos
+    # Adicionando o comando de verificação de admin
     app.add_handler(CommandHandler("verificar_admins", verificar_admins))
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("agendar", agendar_mensagem_comando))
+
+    # Adicionando o comando /start
+    app.add_handler(CommandHandler("start", start))  # Comando start agora registrado
 
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
