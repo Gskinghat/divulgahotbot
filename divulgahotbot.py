@@ -16,6 +16,7 @@ import nest_asyncio
 import os
 import pytz
 from dotenv import load_dotenv
+import random
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
@@ -90,14 +91,12 @@ def get_canais():
     logger.info(f"Canais encontrados: {canais}")  # Adicionando log para verificar os canais
     return canais
 
-# === FUNÇÕES ===
-
-# Função para verificar os canais onde o bot é administrador
+# Função para verificar se o bot é administrador de múltiplos canais de forma concorrente
 async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bot = context.bot
     canais_verificados = []
 
-    for canal in get_canais():  # Lista dos canais cadastrados
+    async def check_admin(canal):
         try:
             membro = await bot.get_chat_member(canal[0], bot.id)
             if membro.status in ["administrator", "creator"]:
@@ -105,36 +104,13 @@ async def verificar_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Erro ao verificar {canal[0]}: {e}")
 
+    # Usando asyncio.gather() para realizar as verificações simultaneamente
+    await asyncio.gather(*(check_admin(canal) for canal in get_canais()))
+
     texto = f"✅ Bot é administrador em {len(canais_verificados)} canais públicos."
     await update.message.reply_text(texto)
 
-# Função para obter o chat_id
-async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.message.chat.id  # Obtém o chat_id do comando de start
-    await update.message.reply_text(f"Seu chat_id é: {chat_id}")
-
-# Função para adicionar canais via comando
-async def add_canal_comando(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Verificar se o comando foi enviado por um admin
-    if update.message.from_user.id != ADMIN_ID:
-        await update.message.reply_text("Você não tem permissão para adicionar canais.")
-        return
-
-    # Verificar se foi fornecido um ID de canal
-    if not context.args:
-        await update.message.reply_text("Por favor, forneça o ID do canal para adicionar.")
-        return
-
-    canal_id = context.args[0]  # O ID do canal será o primeiro argumento
-
-    try:
-        canal_id = int(canal_id)  # Certificar-se de que o ID é um número inteiro
-        add_canal(canal_id)
-        await update.message.reply_text(f"Canal {canal_id} adicionado com sucesso!")
-    except ValueError:
-        await update.message.reply_text("O ID do canal deve ser um número válido.")
-
-# Função para enviar a mensagem personalizada com a lista de canais
+# Função para enviar a mensagem personalizada com a lista de canais, agora com seleção de 15 canais por vez
 async def enviar_mensagem_programada(bot):
     logger.info("Iniciando envio de mensagens programadas...")  # Log para iniciar a tarefa
 
@@ -145,43 +121,53 @@ async def enviar_mensagem_programada(bot):
     )
 
     canais = get_canais()  # Pegando a lista de canais
-    buttons = []  # Lista para armazenar os botões
-
     if not canais:
         logger.warning("Nenhum canal encontrado na base de dados!")  # Log de alerta se nenhum canal for encontrado
         return
 
-    for canal in canais:
-        canal_id = canal[0]  # ID do canal
-        
+    # Embaralhar a lista de canais para garantir que a seleção seja aleatória
+    random.shuffle(canais)
+
+    # Dividir os canais em grupos de 15
+    grupos_canais = [canais[i:i + 15] for i in range(0, len(canais), 15)]
+
+    # Para cada grupo de 15 canais, enviamos a mensagem
+    for grupo in grupos_canais:
+        buttons = []  # Lista para armazenar os botões
+
+        for canal in grupo:
+            canal_id = canal[0]  # ID do canal
+            
+            try:
+                # Buscando o nome real do canal
+                chat = await bot.get_chat(canal_id)
+                canal_nome = chat.title  # Agora o nome do canal será extraído corretamente
+
+                # Verificando se o canal tem um nome de usuário (isso indica que o canal é público)
+                if chat.username:
+                    canal_link = f"https://t.me/{chat.username}"  # Usando o nome de usuário para canais públicos
+                else:
+                    canal_link = f"https://t.me/{canal_id}"  # Usando o ID para canais privados
+            except Exception as e:
+                logger.error(f"Erro ao buscar o nome do canal {canal_id}: {e}")
+                canal_nome = f"Canal {canal_id}"  # Caso haja erro, use o ID como fallback
+                canal_link = f"https://t.me/{canal_id}"  # Fallback usando o ID interno
+
+            buttons.append([InlineKeyboardButton(canal_nome, url=canal_link)])
+
+        # Enviando a mensagem para o grupo de canais
         try:
-            # Buscando o nome real do canal
-            chat = await bot.get_chat(canal_id)
-            canal_nome = chat.title  # Agora o nome do canal será extraído corretamente
-
-            # Verificando se o canal tem um nome de usuário (isso indica que o canal é público)
-            if chat.username:
-                canal_link = f"https://t.me/{chat.username}"  # Usando o nome de usuário para canais públicos
-            else:
-                canal_link = f"https://t.me/{canal_id}"  # Usando o ID para canais privados
+            await bot.send_message(
+                chat_id=canal_id,  # Envia para o último canal do grupo, mas você pode escolher enviar para outro canal
+                text=mensagem,
+                reply_markup=InlineKeyboardMarkup(buttons),
+                parse_mode="Markdown"
+            )
+            logger.info(f"Mensagem enviada com sucesso para o grupo de canais.")
         except Exception as e:
-            logger.error(f"Erro ao buscar o nome do canal {canal_id}: {e}")
-            canal_nome = f"Canal {canal_id}"  # Caso haja erro, use o ID como fallback
-            canal_link = f"https://t.me/{canal_id}"  # Fallback usando o ID interno
+            logger.error(f"Erro ao enviar mensagem para o grupo de canais: {e}")
 
-        buttons.append([InlineKeyboardButton(canal_nome, url=canal_link)])
-
-    # Enviando a mensagem para todos os canais cadastrados
-    for canal in canais:
-        canal_id = canal[0]
-        try:
-            # Envia a mensagem para o canal
-            await bot.send_message(chat_id=canal_id, text=mensagem, reply_markup=InlineKeyboardMarkup(buttons), parse_mode="Markdown")
-            logger.info(f"Mensagem enviada com sucesso para o canal {canal_id}")  # Log de sucesso
-        except Exception as e:
-            logger.error(f"Erro ao enviar mensagem para o canal {canal_id}: {e}")
-
-    logger.info("Mensagens enviadas para todos os canais!")  # Log para confirmar que a mensagem foi enviada para todos os canais
+    logger.info("Mensagens enviadas para todos os grupos com canais!")
 
 # Função para iniciar o bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -212,21 +198,6 @@ async def main():
 
     # Adicionando o comando /start
     app.add_handler(CommandHandler("start", start))  # Comando start agora registrado
-
-    # Adicionando canais diretamente para testes
-    canais_teste = [
-        -1002659272412, -1002532471834, -1002555455661, -1002694017662, -1002619113523,
-        -1002663654523, -1002532598032, -1002569779659, -1002637058718, -1002673806655,
-        -1002617005901, -1002591102891, -1002502547461, -1002527153879, -1002547163724,
-        -1002686248264, -1002549685600, -1002683098146, -1002521780775, -1002496248801,
-        -1002652344851, -1002510129415, -1002524424215, -1002699745337, -1002620495214,
-        -1002620603496, -1002670501142, -1002293619562, -1002659153687, -1002506650062,
-        -1002689763350, -1002531772113, -1002674038291, -1002670668044, -1002673660530,
-        -1002658512135
-    ]
-
-    for canal_id in canais_teste:
-        add_canal(canal_id)
 
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
