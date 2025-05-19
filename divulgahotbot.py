@@ -157,6 +157,7 @@ async def enviar_mensagem_programada(bot):
 
         # Enviando a mensagem para o grupo de canais
         try:
+            # Envia a mensagem para o grupo de canais
             await bot.send_message(
                 chat_id=canal_id,  # Envia para o último canal do grupo, mas você pode escolher enviar para outro canal
                 text=mensagem,
@@ -224,8 +225,8 @@ async def main():
     try:
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=21, minute=30, args=[app.bot], timezone=brasilia_tz)  # 21:10
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=4, minute=0, args=[app.bot], timezone=brasilia_tz)   # 4h
-        scheduler.add_job(enviar_mensagem_programada, "cron", hour=9, minute=30, args=[app.bot], timezone=brasilia_tz)  # 11h
-        scheduler.add_job(enviar_mensagem_programada, "cron", hour=16, minute=0, args=[app.bot], timezone=brasilia_tz)  # 16h
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=11, minute=0, args=[app.bot], timezone=brasilia_tz)  # 11h
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=16, minute=0, args=[app.bot], timezone=brasilia_tz)  # 17h
         scheduler.start()  # Iniciando o scheduler
     except Exception as e:
         logger.error(f"Erro ao agendar tarefa: {e}")
