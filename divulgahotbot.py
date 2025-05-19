@@ -120,7 +120,7 @@ async def enviar_mensagem_programada(bot):
         "👇Veja todos os canais disponíveis👇\n\n"
     )
 
-    canais = get_canais()  # Pegando a lista de canais
+    canais = get_canais()  # Pegando a lista de canais do banco
     if not canais:
         logger.warning("Nenhum canal encontrado na base de dados!")  # Log de alerta se nenhum canal for encontrado
         return
@@ -199,11 +199,26 @@ async def main():
     # Adicionando o comando /start
     app.add_handler(CommandHandler("start", start))  # Comando start agora registrado
 
+    # Adicionando canais diretamente ao banco (IDs de canais de teste)
+    canais_teste = [
+        -1002659272412, -1002532471834, -1002555455661, -1002694017662, -1002619113523,
+        -1002663654523, -1002532598032, -1002569779659, -1002637058718, -1002673806655,
+        -1002617005901, -1002591102891, -1002502547461, -1002527153879, -1002547163724,
+        -1002686248264, -1002549685600, -1002683098146, -1002521780775, -1002496248801,
+        -1002652344851, -1002510129415, -1002524424215, -1002699745337, -1002620495214,
+        -1002620603496, -1002670501142, -1002293619562, -1002659153687, -1002506650062,
+        -1002689763350, -1002531772113, -1002674038291, -1002670668044, -1002673660530,
+        -1002658512135
+    ]
+
+    for canal_id in canais_teste:
+        add_canal(canal_id)
+
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=21, minute=30, args=[app.bot], timezone=brasilia_tz)  # 21:10
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=4, minute=0, args=[app.bot], timezone=brasilia_tz)   # 4h
-        scheduler.add_job(enviar_mensagem_programada, "cron", hour=12, minute=10, args=[app.bot], timezone=brasilia_tz)  # 11h
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=12, minute=22, args=[app.bot], timezone=brasilia_tz)  # 11h
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=17, minute=0, args=[app.bot], timezone=brasilia_tz)  # 17h
         scheduler.start()  # Iniciando o scheduler
     except Exception as e:
