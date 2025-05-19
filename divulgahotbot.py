@@ -128,45 +128,42 @@ async def enviar_mensagem_programada(bot):
     # Embaralhar a lista de canais para garantir que a seleção seja aleatória
     random.shuffle(canais)
 
-    # Dividir os canais em grupos de 15
-    grupos_canais = [canais[i:i + 15] for i in range(0, len(canais), 15)]
-
-    # Para cada grupo de 15 canais, enviamos a mensagem
-    for grupo in grupos_canais:
-        buttons = []  # Lista para armazenar os botões
-
-        for canal in grupo:
-            canal_id = canal[0]  # ID do canal
-            
-            try:
-                # Buscando o nome real do canal
-                chat = await bot.get_chat(canal_id)
-                canal_nome = chat.title  # Agora o nome do canal será extraído corretamente
-
-                # Verificando se o canal tem um nome de usuário (isso indica que o canal é público)
-                if chat.username:
-                    canal_link = f"https://t.me/{chat.username}"  # Usando o nome de usuário para canais públicos
-                else:
-                    canal_link = f"https://t.me/{canal_id}"  # Usando o ID para canais privados
-
-                # Log para verificar o nome do canal
-                logger.info(f"Canal: {canal_nome} | Link: {canal_link}")
-
-            except Exception as e:
-                # Se ocorrer um erro, loga o erro e usa o fallback
-                logger.error(f"Erro ao buscar o nome do canal {canal_id}: {e}")
-                canal_nome = f"Canal {canal_id}"  # Caso haja erro, use o ID como fallback
-                canal_link = f"https://t.me/{canal_id}"  # Fallback usando o ID interno
-
-            buttons.append([InlineKeyboardButton(canal_nome, url=canal_link)])
-
-        # Enviando a mensagem para o grupo de canais
+    # Para cada canal da lista, enviamos a mensagem
+    for canal in canais:
+        canal_id = canal[0]  # ID do canal
+        
         try:
-            # Envia a mensagem para o grupo de canais
+            # Buscando o nome real do canal
+            chat = await bot.get_chat(canal_id)
+            canal_nome = chat.title  # Agora o nome do canal será extraído corretamente
+
+            # Verificando se o canal tem um nome de usuário (isso indica que o canal é público)
+            if chat.username:
+                canal_link = f"https://t.me/{chat.username}"  # Usando o nome de usuário para canais públicos
+            else:
+                canal_link = f"https://t.me/{canal_id}"  # Usando o ID para canais privados
+
+            # Log para verificar o nome do canal
+            logger.info(f"Canal: {canal_nome} | Link: {canal_link}")
+
+        except Exception as e:
+            # Se ocorrer um erro, loga o erro e usa o fallback
+            logger.error(f"Erro ao buscar o nome do canal {canal_id}: {e}")
+            canal_nome = f"Canal {canal_id}"  # Caso haja erro, use o ID como fallback
+            canal_link = f"https://t.me/{canal_id}"  # Fallback usando o ID interno
+
+        # Gerar botão com nome do canal
+        buttons = [
+            InlineKeyboardButton(canal_nome, url=canal_link)
+        ]
+
+        # Enviando a mensagem para o canal
+        try:
+            # Envia a mensagem para o canal
             await bot.send_message(
-                chat_id=canal_id,  # Envia para o último canal do grupo, mas você pode escolher enviar para outro canal
+                chat_id=canal_id,  # Envia para cada canal na lista
                 text=mensagem,
-                reply_markup=InlineKeyboardMarkup(buttons),
+                reply_markup=InlineKeyboardMarkup([buttons]),
                 parse_mode="Markdown"
             )
             logger.info(f"Mensagem enviada com sucesso para o canal {canal_id}.")
@@ -175,7 +172,7 @@ async def enviar_mensagem_programada(bot):
             # Adicionar intervalo de 4 segundos antes de tentar enviar para o próximo canal
             await asyncio.sleep(4)  # Espera 4 segundos antes de enviar para o próximo canal
 
-    logger.info("Mensagens enviadas para todos os grupos com canais!")
+    logger.info("Mensagens enviadas para todos os canais!")
 
 # Função para iniciar o bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -233,7 +230,7 @@ async def main():
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=21, minute=30, args=[app.bot], timezone=brasilia_tz)  # 21:10
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=4, minute=0, args=[app.bot], timezone=brasilia_tz)   # 4h
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=11, minute=0, args=[app.bot], timezone=brasilia_tz)  # 11h
-        scheduler.add_job(enviar_mensagem_programada, "cron", hour=17, minute=1, args=[app.bot], timezone=brasilia_tz)  # 17h
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=17, minute=15, args=[app.bot], timezone=brasilia_tz)  # 17h
         scheduler.start()  # Iniciando o scheduler
     except Exception as e:
         logger.error(f"Erro ao agendar tarefa: {e}")
