@@ -148,7 +148,9 @@ async def enviar_mensagem_programada(bot):
                     canal_link = f"https://t.me/{chat.username}"  # Usando o nome de usuário para canais públicos
                 else:
                     canal_link = f"https://t.me/{canal_id}"  # Usando o ID para canais privados
+
             except Exception as e:
+                # Se ocorrer um erro, loga o erro e usa o fallback
                 logger.error(f"Erro ao buscar o nome do canal {canal_id}: {e}")
                 canal_nome = f"Canal {canal_id}"  # Caso haja erro, use o ID como fallback
                 canal_link = f"https://t.me/{canal_id}"  # Fallback usando o ID interno
@@ -228,7 +230,7 @@ async def main():
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=21, minute=30, args=[app.bot], timezone=brasilia_tz)  # 21:10
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=4, minute=0, args=[app.bot], timezone=brasilia_tz)   # 4h
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=11, minute=0, args=[app.bot], timezone=brasilia_tz)  # 11h
-        scheduler.add_job(enviar_mensagem_programada, "cron", hour=16, minute=20, args=[app.bot], timezone=brasilia_tz)  # 17h
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=16, minute=36, args=[app.bot], timezone=brasilia_tz)  # 17h
         scheduler.start()  # Iniciando o scheduler
     except Exception as e:
         logger.error(f"Erro ao agendar tarefa: {e}")
