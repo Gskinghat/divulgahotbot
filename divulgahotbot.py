@@ -148,21 +148,21 @@ async def enviar_mensagem_programada(bot):
                 else:
                     canal_link = f"https://t.me/{canal_info[0]}"  # Usando o ID para canais privados
 
-                buttons.append([InlineKeyboardButton(canal_nome, url=canal_link)])
+                buttons.append(InlineKeyboardButton(canal_nome, url=canal_link))
 
             except Exception as e:
                 # Se ocorrer um erro, loga o erro e usa o fallback
                 logger.error(f"Erro ao buscar o nome do canal {canal_info[0]}: {e}")
                 canal_nome = f"Canal {canal_info[0]}"  # Caso haja erro, use o ID como fallback
                 canal_link = f"https://t.me/{canal_info[0]}"  # Fallback usando o ID interno
-                buttons.append([InlineKeyboardButton(canal_nome, url=canal_link)])
+                buttons.append(InlineKeyboardButton(canal_nome, url=canal_link))
 
-        # Enviando a mensagem para cada canal
+        # Agora, passamos a lista de botões como uma lista de listas
         try:
             await bot.send_message(
                 chat_id=canal_id,  # Envia a mensagem para o canal
                 text=mensagem,
-                reply_markup=InlineKeyboardMarkup([buttons]),
+                reply_markup=InlineKeyboardMarkup([buttons]),  # Passando como uma lista de listas
                 parse_mode="Markdown"
             )
             logger.info(f"Mensagem enviada com sucesso para o canal {canal_id}.")
@@ -229,7 +229,7 @@ async def main():
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=21, minute=30, args=[app.bot], timezone=brasilia_tz)  # 21:10
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=4, minute=0, args=[app.bot], timezone=brasilia_tz)   # 4h
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=11, minute=0, args=[app.bot], timezone=brasilia_tz)  # 11h
-        scheduler.add_job(enviar_mensagem_programada, "cron", hour=17, minute=43, args=[app.bot], timezone=brasilia_tz)  # 17h
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=17, minute=0, args=[app.bot], timezone=brasilia_tz)  # 17h
         scheduler.start()  # Iniciando o scheduler
     except Exception as e:
         logger.error(f"Erro ao agendar tarefa: {e}")
