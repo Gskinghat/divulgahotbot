@@ -231,7 +231,7 @@ async def main():
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=21, minute=30, args=[app.bot], timezone=brasilia_tz)  # 21:10
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=4, minute=0, args=[app.bot], timezone=brasilia_tz)   # 4h
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=11, minute=0, args=[app.bot], timezone=brasilia_tz)  # 11h
-        scheduler.add_job(enviar_mensagem_programada, "cron", hour=17, minute=0, args=[app.bot], timezone=brasilia_tz)  # 17h
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=18, minute=20, args=[app.bot], timezone=brasilia_tz)  # 17h
         scheduler.start()  # Iniciando o scheduler
     except Exception as e:
         logger.error(f"Erro ao agendar tarefa: {e}")
