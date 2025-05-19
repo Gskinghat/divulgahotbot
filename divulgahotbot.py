@@ -214,7 +214,7 @@ async def main():
 
     # Agendando as mensagens para horários específicos em horário de Brasília
     try:
-        scheduler.add_job(enviar_mensagem_programada, "cron", hour=21, minute=10, args=[app.bot], timezone=brasilia_tz)  # 21:10
+        scheduler.add_job(enviar_mensagem_programada, "cron", hour=21, minute=19, args=[app.bot], timezone=brasilia_tz)  # 21:10
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=4, minute=0, args=[app.bot], timezone=brasilia_tz)   # 4h
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=11, minute=0, args=[app.bot], timezone=brasilia_tz)  # 11h
         scheduler.add_job(enviar_mensagem_programada, "cron", hour=17, minute=0, args=[app.bot], timezone=brasilia_tz)  # 17h
